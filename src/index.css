@@ -1,0 +1,20 @@
+/* 既定はダークテーマ ( specs.md 6.4 ). 段階0では最小限の指定にとどめる. */
+:root {
+  color-scheme: dark;
+
+  --bg: #14161a;
+  --fg: #e8eaed;
+  --fg-muted: #9aa0a6;
+
+  font-family: system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  line-height: 1.6;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  color: var(--fg);
+  /* iPhone のノッチ / ホームインジケータを避ける ( specs.md 6.4 ). */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}

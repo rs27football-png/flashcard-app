@@ -8,7 +8,17 @@
 
 ## 状態
 
-未着手. `specs.md` の段階0 ( リポジトリ作成と GitHub Pages への自動公開 ) から開始する.
+段階0 ( 開発環境の構築と GitHub Pages への自動公開 ) が完了. 次は段階1 ( データ層と CRUD ).
+
+公開先: https://rs27football-png.github.io/flashcard-app/
+
+## 開発
+
+```bash
+npm install   # 依存をインストールする ( 初回のみ )
+npm run dev   # 開発サーバを起動する
+npm run build # 本番ビルドを dist/ に出力する
+```
 
 ## 主な機能 ( 予定 )
 
