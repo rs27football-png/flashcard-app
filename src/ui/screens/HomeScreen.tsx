@@ -95,6 +95,9 @@ export function HomeScreen() {
       <header className="screen__head">
         <h1 className="screen__title">単語帳アプリ</h1>
         <div className="screen__actions">
+          <Link className="btn" to="/import">
+            テキストから取り込み
+          </Link>
           <button
             type="button"
             className="btn"

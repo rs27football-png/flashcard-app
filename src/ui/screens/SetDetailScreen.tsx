@@ -48,6 +48,9 @@ export function SetDetailScreen() {
           {set.description !== '' && <p className="screen__desc">{set.description}</p>}
         </div>
         <div className="screen__actions">
+          <Link className="btn" to={`/import?setId=${set.id}`}>
+            テキストを取り込む
+          </Link>
           <Link className="btn" to={`/sets/${set.id}/settings`}>
             セット設定
           </Link>

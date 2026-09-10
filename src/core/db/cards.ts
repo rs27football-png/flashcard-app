@@ -150,3 +150,51 @@ export async function sortCards(setId: string, by: 'term' | 'createdAt'): Promis
     await db.cards.bulkPut(sorted.map((card, index) => ({ ...card, order: index })))
   })
 }
+
+/**
+ * カードをまとめて追加する. テキストインポートから呼ぶ ( specs.md §4.5 ).
+ *
+ * 1枚ずつ createCard を呼ぶと, 枚数分だけトランザクションと order の再計算が走る.
+ * 数百枚の貼り付けが前提のため, 一括の書き込みにまとめる.
+ *
+ * @returns 実際に追加した枚数
+ */
+export async function createCards(
+  setId: string,
+  inputs: readonly CardInput[],
+): Promise<number> {
+  const values = inputs
+    .map(trimInput)
+    .filter((input) => input.term !== '' || input.definition !== '')
+  if (values.length === 0) return 0
+
+  const now = Date.now()
+  const base = nextOrder(await db.cards.where('setId').equals(setId).toArray())
+  const cards: Card[] = values.map((input, index) => ({
+    id: newId(),
+    setId,
+    ...input,
+    termImageId: null,
+    definitionImageId: null,
+    starred: false,
+    order: base + index,
+    normalized: buildCardNormalized(input),
+    createdAt: now,
+    updatedAt: now,
+  }))
+  const progress: CardProgress[] = cards.map((card) => ({
+    cardId: card.id,
+    setId,
+    status: 'unseen',
+    lastAnsweredAt: null,
+    quizCorrect: 0,
+    quizWrong: 0,
+  }))
+
+  await db.transaction('rw', db.cards, db.progress, db.sets, async () => {
+    await db.cards.bulkAdd(cards)
+    await db.progress.bulkAdd(progress)
+    await db.sets.update(setId, { updatedAt: now })
+  })
+  return cards.length
+}
