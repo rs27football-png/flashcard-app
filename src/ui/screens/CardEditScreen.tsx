@@ -15,6 +15,7 @@ import {
 } from '../../core/db/cards'
 import { getSet } from '../../core/db/sets'
 import { Breadcrumb } from '../components/Breadcrumb'
+import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
 
 const EMPTY_INPUT: CardInput = { term: '', definition: '', hint: '' }
@@ -31,22 +32,43 @@ export function CardEditScreen() {
   const [error, setError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Card | null>(null)
   const termRef = useRef<HTMLTextAreaElement>(null)
+  // 保存時に読むのは常に最新の入力値でなければならない. 日本語入力の確定を待つあいだに
+  // 状態が変わるため, 描画時に閉じ込めた値ではなく ref 経由で参照する.
+  // 書き換えは入力を受けた時点で行い, 描画中には触らない.
+  const inputRef = useRef(input)
+  /** 日本語入力の変換中かどうか. 未確定のまま保存すると欄に文字が残る */
+  const composingRef = useRef(false)
 
   const isBlank = input.term.trim() === '' && input.definition.trim() === ''
 
+  /** 入力値の更新はここに一本化し, state と ref を同時に進める */
+  const updateInput = (patch: Partial<CardInput>) => {
+    const next = { ...inputRef.current, ...patch }
+    inputRef.current = next
+    setInput(next)
+  }
+
   const resetForm = () => {
+    inputRef.current = EMPTY_INPUT
     setInput(EMPTY_INPUT)
     setEditingId(null)
     setError(null)
   }
 
   const submit = async () => {
-    if (isBlank) return
+    // 変換が確定していないうちに保存すると, 未確定の文字列が欄に残る.
+    // いったんフォーカスを外して確定させ, その入力が state に届くのを1周期待つ.
+    if (composingRef.current) {
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    }
+    const values = inputRef.current
+    if (values.term.trim() === '' && values.definition.trim() === '') return
     try {
       if (editingId === null) {
-        await createCard(setId, input)
+        await createCard(setId, values)
       } else {
-        await updateCard(editingId, input)
+        await updateCard(editingId, values)
       }
       resetForm()
       // 連続追加を想定し, 保存後は入力欄をクリアして同じ画面に留まる ( specs.md §4.3 )
@@ -56,9 +78,21 @@ export function CardEditScreen() {
     }
   }
 
+  /** 変換の開始と終了を拾う. どの入力欄でも同じ扱いでよいので form でまとめて受ける */
+  const compositionHandlers = {
+    onCompositionStart: () => {
+      composingRef.current = true
+    },
+    onCompositionEnd: () => {
+      composingRef.current = false
+    },
+  }
+
   const startEdit = (card: Card) => {
+    const values = { term: card.term, definition: card.definition, hint: card.hint }
     setEditingId(card.id)
-    setInput({ term: card.term, definition: card.definition, hint: card.hint })
+    inputRef.current = values
+    setInput(values)
     setError(null)
     termRef.current?.focus()
   }
@@ -91,17 +125,25 @@ export function CardEditScreen() {
           <Link className="btn" to={`/sets/${set.id}`}>
             セット詳細へ戻る
           </Link>
+          {/* カードを増やす操作をこの画面に集約する ( specs.md §4.3 ) */}
+          <Link className="btn btn--primary" to={`/import?setId=${set.id}`}>
+            <Icon name="import" />
+            インポート
+          </Link>
         </div>
       </header>
 
       <form
         className="form card-form"
+        {...compositionHandlers}
         onSubmit={(event) => {
           event.preventDefault()
           void submit()
         }}
         // Ctrl + Enter で保存する ( specs.md §5.3 ). textarea 内でも効くよう form 側で拾う.
+        // 変換確定の Enter を拾わないよう, 変換中は無視する.
         onKeyDown={(event) => {
+          if (composingRef.current) return
           if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
             event.preventDefault()
             void submit()
@@ -119,7 +161,7 @@ export function CardEditScreen() {
             className="input"
             rows={2}
             value={input.term}
-            onChange={(event) => setInput({ ...input, term: event.target.value })}
+            onChange={(event) => updateInput({ term: event.target.value })}
             maxLength={1000}
           />
         </label>
@@ -130,7 +172,7 @@ export function CardEditScreen() {
             className="input"
             rows={3}
             value={input.definition}
-            onChange={(event) => setInput({ ...input, definition: event.target.value })}
+            onChange={(event) => updateInput({ definition: event.target.value })}
             maxLength={2000}
           />
         </label>
@@ -140,7 +182,7 @@ export function CardEditScreen() {
           <input
             className="input"
             value={input.hint}
-            onChange={(event) => setInput({ ...input, hint: event.target.value })}
+            onChange={(event) => updateInput({ hint: event.target.value })}
             maxLength={200}
           />
         </label>
@@ -169,7 +211,8 @@ export function CardEditScreen() {
             disabled={cards.length < 2}
             onClick={() => void sortCards(setId, 'term')}
           >
-            用語の昇順に整列
+            <Icon name="sort" size={15} />
+            用語の昇順
           </button>
           <button
             type="button"
@@ -177,7 +220,8 @@ export function CardEditScreen() {
             disabled={cards.length < 2}
             onClick={() => void sortCards(setId, 'createdAt')}
           >
-            作成日時順に整列
+            <Icon name="sort" size={15} />
+            作成日時順
           </button>
         </div>
       </div>
@@ -198,7 +242,7 @@ export function CardEditScreen() {
                 aria-pressed={card.starred}
                 onClick={() => void setStarred(card.id, !card.starred)}
               >
-                ★
+                <Icon name="star" size={17} />
               </button>
               <div className="cards__term">{card.term}</div>
               <div className="cards__definition">{card.definition}</div>
@@ -211,7 +255,7 @@ export function CardEditScreen() {
                   disabled={index === 0}
                   onClick={() => void moveCard(card.id, -1)}
                 >
-                  ↑
+                  <Icon name="arrow-up" size={17} />
                 </button>
                 <button
                   type="button"
@@ -220,9 +264,10 @@ export function CardEditScreen() {
                   disabled={index === cards.length - 1}
                   onClick={() => void moveCard(card.id, 1)}
                 >
-                  ↓
+                  <Icon name="arrow-down" size={17} />
                 </button>
                 <button type="button" className="btn btn--small" onClick={() => startEdit(card)}>
+                  <Icon name="edit" size={15} />
                   編集
                 </button>
                 <button
@@ -230,6 +275,7 @@ export function CardEditScreen() {
                   className="btn btn--small btn--danger"
                   onClick={() => setPendingDelete(card)}
                 >
+                  <Icon name="trash" size={15} />
                   削除
                 </button>
               </div>

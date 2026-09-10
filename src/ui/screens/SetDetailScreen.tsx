@@ -8,6 +8,7 @@ import { getProgressSummary, getSet, updateStudyOptions } from '../../core/db/se
 import { resetProgress } from '../../core/db/progress'
 import { normalizeStudyOptions } from '../../core/study/options'
 import { Breadcrumb } from '../components/Breadcrumb'
+import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
 import { ProgressBar } from '../components/ProgressBar'
 import { StudyOptionsForm } from '../components/StudyOptionsForm'
@@ -55,13 +56,13 @@ export function SetDetailScreen() {
           {set.description !== '' && <p className="screen__desc">{set.description}</p>}
         </div>
         <div className="screen__actions">
-          <Link className="btn" to={`/import?setId=${set.id}`}>
-            テキストを取り込む
-          </Link>
+          {/* インポートへの導線はカード編集画面に集約している ( specs.md §4.3 ) */}
           <Link className="btn" to={`/sets/${set.id}/settings`}>
+            <Icon name="settings" />
             セット設定
           </Link>
           <Link className="btn" to={`/sets/${set.id}/cards`}>
+            <Icon name="edit" />
             カードを編集
           </Link>
           <button
@@ -70,6 +71,7 @@ export function SetDetailScreen() {
             disabled={cards.length === 0}
             onClick={() => setStudyOptions(normalizeStudyOptions(set.studyOptions))}
           >
+            <Icon name="play" />
             暗記モード
           </button>
         </div>
@@ -86,6 +88,7 @@ export function SetDetailScreen() {
           disabled={summary.known + summary.learning === 0}
           onClick={() => setConfirmingReset(true)}
         >
+          <Icon name="refresh" size={15} />
           進捗をリセット
         </button>
       </div>
@@ -119,7 +122,7 @@ export function SetDetailScreen() {
                 aria-pressed={card.starred}
                 onClick={() => void setStarred(card.id, !card.starred)}
               >
-                ★
+                <Icon name="star" size={17} />
               </button>
               <div className="cards__term">{card.term}</div>
               <div className="cards__definition">{card.definition}</div>
