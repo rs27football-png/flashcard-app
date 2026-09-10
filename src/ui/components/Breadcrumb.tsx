@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { Folder } from '../../core/types'
 import { getFolderPath } from '../../core/db/folders'
+import { Icon } from './Icon'
 
 interface BreadcrumbProps {
   folders: readonly Folder[]
@@ -14,7 +15,9 @@ export function Breadcrumb({ folders, folderId, current }: BreadcrumbProps) {
   const path = getFolderPath(folders, folderId)
   return (
     <nav className="breadcrumb" aria-label="現在位置">
+      {/* 経路の起点であると同時にホームへの入口でもあるため, 家の印を添える */}
       <Link to="/" className="breadcrumb__link">
+        <Icon name="home" size={14} />
         ホーム
       </Link>
       {path.map((folder) => (

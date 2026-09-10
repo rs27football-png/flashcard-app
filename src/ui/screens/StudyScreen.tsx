@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import type {
   Card,
@@ -310,7 +310,7 @@ export function StudyScreen() {
    */
   const commit = useCallback(
     (known: boolean) => {
-      if (currentCard === null || options === null || flying !== null) return
+      if (currentCard === null || options === null) return
       // 判定と同時に山は次へ進むため, 見えていた面の文字をここで写し取っておく
       const showingTerm = flipped ? options.front === 'definition' : options.front === 'term'
       setFlying({
@@ -322,12 +322,17 @@ export function StudyScreen() {
       setHeld(false)
       dragStartRef.current = null
       void answer(known)
+
+      // 前の札がまだ飛んでいる最中でも, 新しい判定を受け付ける.
+      // 演出の終わりを待って入力を捨てると, 速く繰ったときに反応しなくなる.
+      // 飛ばす層は1枚ぶんなので, 前の札は途中で差し替わる.
+      if (flyTimerRef.current !== null) window.clearTimeout(flyTimerRef.current)
       flyTimerRef.current = window.setTimeout(() => {
         setFlying(null)
         flyTimerRef.current = null
       }, FLY_OUT_MS)
     },
-    [currentCard, options, flipped, flying, dragX, answer],
+    [currentCard, options, flipped, dragX, answer],
   )
 
   const restart = useCallback(async () => {
@@ -345,9 +350,16 @@ export function StudyScreen() {
   }, [options, cards, setId, startRound])
 
   // キーボード操作 ( specs.md §5.1 )
-  useEffect(() => {
-    if (phase.kind !== 'study') return
-    const onKeyDown = (event: KeyboardEvent) => {
+  //
+  // 中身は判定のたびに作り直されるが, 購読はラウンドのあいだ1回に留める.
+  // 依存が変わるたびに購読し直すと, 反映が間に合わない瞬間に古い処理が呼ばれ,
+  // 「押したのに判定されない」ことがある. 実際, 連続して矢印キーを押すと
+  // 2回に1回落ちる状態になっていた.
+  const handleKeyRef = useRef<(event: KeyboardEvent) => void>(() => {})
+
+  // 反映を描画と同じ拍で行う. useEffect では描画が間引かれる状況で遅れが出る.
+  useLayoutEffect(() => {
+    handleKeyRef.current = (event: KeyboardEvent) => {
       // 入力欄にフォーカスがあるとき, およびダイアログを開いているあいだは横取りしない
       const target = event.target
       if (target instanceof HTMLElement && target.closest('input, textarea, select')) return
@@ -380,9 +392,14 @@ export function StudyScreen() {
           if (event.key === 'h' || event.key === 'H') setHintShown(true)
       }
     }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [phase.kind, commit, undo, toggleShuffle, navigate, setId])
+  })
+
+  useEffect(() => {
+    if (phase.kind !== 'study') return
+    const listener = (event: KeyboardEvent) => handleKeyRef.current(event)
+    window.addEventListener('keydown', listener)
+    return () => window.removeEventListener('keydown', listener)
+  }, [phase.kind])
 
   if (phase.kind === 'loading') return <p className="empty">読み込み中…</p>
 
@@ -564,6 +581,15 @@ export function StudyScreen() {
           <Icon name="settings" size={15} />
           設定
         </button>
+        {/* ラウンドの途中でも進捗を戻せるようにする ( specs.md §4.6.6 ) */}
+        <button
+          type="button"
+          className="btn btn--small"
+          onClick={() => setConfirmingReset(true)}
+        >
+          <Icon name="refresh" size={15} />
+          最初から
+        </button>
         <Link className="btn btn--small" to={`/sets/${setId}`}>
           <Icon name="close" size={15} />
           終了
@@ -575,7 +601,6 @@ export function StudyScreen() {
           <div
             className="stack"
             onPointerDown={(event) => {
-              if (flying !== null) return
               event.currentTarget.setPointerCapture(event.pointerId)
               dragStartRef.current = event.clientX
               setHeld(true)
@@ -712,6 +737,13 @@ export function StudyScreen() {
         → 知っている / ← 学習中 / Space 裏返す / Backspace 1つ戻る / S シャッフル / H ヒント /
         Esc 終了
       </p>
+
+      <ResetDialog
+        open={confirmingReset}
+        setName={set.name}
+        onCancel={() => setConfirmingReset(false)}
+        onConfirm={() => void restart()}
+      />
 
       <Modal open={showSettings} title="学習の設定" onClose={() => setShowSettings(false)}>
         <div className="form">
