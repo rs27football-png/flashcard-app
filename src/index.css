@@ -668,3 +668,189 @@ body {
   text-decoration: none;
   white-space: nowrap;
 }
+
+/* ---- 暗記モード ( S5 ) ---- */
+
+.study {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+}
+
+.study__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-block: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.study__counter strong {
+  display: block;
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.study__counter--learning {
+  color: var(--learning);
+}
+
+.study__counter--known {
+  color: var(--known);
+  text-align: end;
+}
+
+.study__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--fg-muted);
+}
+
+.study__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.375rem;
+  margin-bottom: 0.75rem;
+}
+
+.btn--on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.study__card-area {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  /* スワイプ中に画面ごと横スクロールしないよう, 横方向のジェスチャを奪う */
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.study__card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 14rem;
+  padding: 1.5rem;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background-color: var(--surface);
+  cursor: pointer;
+  transition: border-color 120ms ease-out;
+}
+
+.study__face {
+  width: 100%;
+  text-align: center;
+}
+
+.study__text {
+  margin: 0;
+  font-size: 1.25rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.study__side {
+  display: block;
+  margin-top: 1rem;
+  color: var(--fg-muted);
+  font-size: 0.75rem;
+}
+
+.study__card--flipped {
+  background-color: var(--surface-hi);
+}
+
+.study__hint {
+  min-height: 2rem;
+}
+
+.study__actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-block: 1rem;
+}
+
+.btn--judge {
+  flex-direction: column;
+  gap: 0.125rem;
+  width: 5.5rem;
+  min-height: 4rem;
+  border-width: 2px;
+  font-size: 1.5rem;
+}
+
+.btn__label {
+  font-size: 0.75rem;
+}
+
+.btn--judge-learning {
+  border-color: var(--learning);
+  color: var(--learning);
+}
+
+.btn--judge-known {
+  border-color: var(--known);
+  color: var(--known);
+}
+
+/* キーボードの案内は指で操作する画面では場所を取るだけなので, 広い画面でだけ出す */
+.study__keys {
+  display: none;
+  text-align: center;
+}
+
+@media (min-width: 48rem) and (pointer: fine) {
+  .study__keys {
+    display: block;
+  }
+}
+
+/* ---- 結果 ( S7 ) ---- */
+
+.result {
+  display: flex;
+  gap: 0.75rem;
+  margin-block: 1rem;
+}
+
+.result__tile {
+  flex: 1 1 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+  font-size: 0.8125rem;
+}
+
+.result__num {
+  display: block;
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+.result__tile--known {
+  border-color: color-mix(in srgb, var(--known) 50%, transparent);
+  color: var(--known);
+}
+
+.result__tile--learning {
+  border-color: color-mix(in srgb, var(--learning) 50%, transparent);
+  color: var(--learning);
+}
+
+.form__actions--stack {
+  flex-direction: column;
+  align-items: stretch;
+  margin-top: 1.5rem;
+}
