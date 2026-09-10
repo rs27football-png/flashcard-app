@@ -31,6 +31,8 @@ export interface StudySet {
   enableImages: boolean
   /** リッチコンテンツ: 数式を使う. 新規セットでは false ( §4.4.1 ) */
   enableMath: boolean
+  /** 当該セットで最後に使用した学習オプション ( specs.md §2.2, §2.7 ) */
+  studyOptions: StudyOptions
   createdAt: number
   updatedAt: number
 }

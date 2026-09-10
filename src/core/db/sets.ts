@@ -1,4 +1,5 @@
-import type { ProgressSummary, StudySet } from '../types'
+import type { ProgressSummary, StudyOptions, StudySet } from '../types'
+import { DEFAULT_STUDY_OPTIONS } from '../study/options'
 import { deleteCardsOfSet } from './cards'
 import { db, newId, nextOrder } from './db'
 
@@ -35,6 +36,7 @@ export async function createSet(input: StudySetInput): Promise<StudySet> {
     // リッチコンテンツは新規セットでは無効とする ( specs.md §4.4.1 )
     enableImages: false,
     enableMath: false,
+    studyOptions: DEFAULT_STUDY_OPTIONS,
     createdAt: now,
     updatedAt: now,
   }
@@ -121,4 +123,15 @@ export async function countCardsPerSet(): Promise<Map<string, number>> {
 /** 1つのセットのカード枚数. 削除確認などに用いる */
 export function countCardsInSet(setId: string): Promise<number> {
   return db.cards.where('setId').equals(setId).count()
+}
+
+/**
+ * 学習オプションを記憶する ( specs.md §2.7 ).
+ * 次回の学習開始時の既定値になる.
+ */
+export async function updateStudyOptions(
+  setId: string,
+  studyOptions: StudyOptions,
+): Promise<void> {
+  await db.sets.update(setId, { studyOptions })
 }
