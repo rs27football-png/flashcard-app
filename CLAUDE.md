@@ -101,8 +101,65 @@ public/
 
 - `node_modules/` や `dist/` をコミットしない ( `.gitignore` で除外済み ).
 - プロジェクトを OneDrive の同期対象フォルダに置かない. `node_modules` の同期でビルドが破綻する.
-- `main` ブランチへ直接 push する運用でよい ( 個人開発のため ). ただし各段階の区切りでは意味のある単位でコミットする.
+- **段階1以降, `main` へ直接 push しない.** ブランチ運用の節に従うこと.
+- リポジトリのブランチ保護で「Require approvals」を有効にしない. 個人開発では自分の PR を承認できず, マージ不能になる.
 - 仕様に定めのない機能を勝手に追加しない. 必要と判断した場合は提案し, 承諾を得てから `specs.md` を更新する.
+
+## ブランチ運用
+
+`main` は**常に公開可能な状態**に保つ. GitHub Actions は `main` への push を契機に GitHub Pages へ自動公開するため, `main` が壊れることは公開サイトが壊れることを意味する.
+
+### 規則
+
+- **段階0 ( 環境構築 ) のみ `main` で直接作業してよい.** 公開対象がまだ存在しないため.
+- **段階1以降は, 段階ごとにブランチを切り, PR 経由で `main` へマージする.**
+- 機能単位ではなく段階単位とする. 個人開発で機能ごとに PR を作ると手続きが過剰になる.
+
+### ブランチ名
+
+`feat/phase<番号>-<内容>` の形式とする.
+
+| 段階 | ブランチ名 |
+|---|---|
+| 1 | `feat/phase1-crud` |
+| 2 | `feat/phase2-import` |
+| 3 | `feat/phase3-flashcard` |
+| 4 | `feat/phase4-quiz` |
+| 5 | `feat/phase5-setops-search` |
+| 6 | `feat/phase6-rich-content` |
+| 7 | `feat/phase7-pwa-backup` |
+
+### 手順
+
+段階の開始時:
+
+```bash
+git switch main
+git pull
+git switch -c feat/phaseN-xxx
+```
+
+作業中は意味のある単位でコミットする. 段階の完了時:
+
+```bash
+git push -u origin feat/phaseN-xxx
+```
+
+その後 PR を作成する. `gh` コマンドが使える場合は `gh pr create` で作成し, 使えない場合は GitHub の Web 画面での手順 ( Compare & pull request → タイトルと説明 → Create pull request ) を利用者に案内すること.
+
+**PR 上で GitHub Actions のビルドが成功したことを確認してからマージする.** 失敗した場合は同じブランチで修正して push すれば PR に反映される.
+
+マージ後:
+
+```bash
+git switch main
+git pull
+git branch -d feat/phaseN-xxx
+```
+
+### 利用者への説明
+
+利用者は git の学習を兼ねている. 各段階で初めて使うコマンドについては, 何をしているかを一度説明すること. 2回目以降は繰り返さなくてよい.
 
 ## コミットメッセージ
 
