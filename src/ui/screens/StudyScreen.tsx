@@ -619,6 +619,10 @@ export function StudyScreen() {
             )}
 
             <div
+              // カードが変わったら要素ごと作り直す.
+              // 同じ要素を使い回すと, 払った位置から中央へ戻る遷移が走ってしまい,
+              // 「払ったはずの札が戻ってきて中身だけ入れ替わる」ように見える.
+              key={currentCard.id}
               className={`stack__card stack__card--top ${flipped ? 'stack__card--flipped' : ''} ${
                 held ? 'stack__card--held' : ''
               }`}

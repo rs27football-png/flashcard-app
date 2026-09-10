@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import type { Card, Folder } from '../../core/types'
@@ -31,6 +31,9 @@ export function CardEditScreen() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Card | null>(null)
+  /** 「保存」を押したときの手応え. データ自体は追加・更新の時点で書き込まれている */
+  const [savedNotice, setSavedNotice] = useState<string | null>(null)
+  const noticeTimerRef = useRef<number | null>(null)
   const termRef = useRef<HTMLTextAreaElement>(null)
   // 保存時に読むのは常に最新の入力値でなければならない. 日本語入力の確定を待つあいだに
   // 状態が変わるため, 描画時に閉じ込めた値ではなく ref 経由で参照する.
@@ -55,7 +58,15 @@ export function CardEditScreen() {
     setError(null)
   }
 
-  const submit = async () => {
+  useEffect(
+    () => () => {
+      if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current)
+    },
+    [],
+  )
+
+  /** @returns 実際に書き込んだかどうか */
+  const submit = async (): Promise<boolean> => {
     // 変換が確定していないうちに保存すると, 未確定の文字列が欄に残る.
     // いったんフォーカスを外して確定させ, その入力が state に届くのを1周期待つ.
     if (composingRef.current) {
@@ -63,7 +74,7 @@ export function CardEditScreen() {
       await new Promise((resolve) => setTimeout(resolve, 0))
     }
     const values = inputRef.current
-    if (values.term.trim() === '' && values.definition.trim() === '') return
+    if (values.term.trim() === '' && values.definition.trim() === '') return false
     try {
       if (editingId === null) {
         await createCard(setId, values)
@@ -73,9 +84,28 @@ export function CardEditScreen() {
       resetForm()
       // 連続追加を想定し, 保存後は入力欄をクリアして同じ画面に留まる ( specs.md §4.3 )
       termRef.current?.focus()
+      return true
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '保存に失敗しました.')
+      return false
     }
+  }
+
+  /**
+   * 明示的な「保存」.
+   *
+   * カードは追加・更新の時点で IndexedDB に書き込まれており, この操作がなくても
+   * データは失われない. 書けているかどうかが利用者から見えないため, 手応えを返す
+   * 場所として用意している. 書きかけの入力が残っていればここで確定させる.
+   */
+  const saveNow = async () => {
+    const wrote = await submit()
+    setSavedNotice(wrote ? '保存しました' : 'すべて保存済みです')
+    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current)
+    noticeTimerRef.current = window.setTimeout(() => {
+      setSavedNotice(null)
+      noticeTimerRef.current = null
+    }, 2400)
   }
 
   /** 変換の開始と終了を拾う. どの入力欄でも同じ扱いでよいので form でまとめて受ける */
@@ -123,15 +153,26 @@ export function CardEditScreen() {
         <h1 className="screen__title">カードを編集</h1>
         <div className="screen__actions">
           <Link className="btn" to={`/sets/${set.id}`}>
-            セット詳細へ戻る
+            戻る
           </Link>
           {/* カードを増やす操作をこの画面に集約する ( specs.md §4.3 ) */}
           <Link className="btn btn--primary" to={`/import?setId=${set.id}`}>
             <Icon name="import" />
             インポート
           </Link>
+          <button type="button" className="btn btn--save" onClick={() => void saveNow()}>
+            <Icon name="check" />
+            保存
+          </button>
         </div>
       </header>
+
+      {savedNotice !== null && (
+        <p className="save-note" role="status">
+          <Icon name="check" size={16} />
+          {savedNotice}
+        </p>
+      )}
 
       <form
         className="form card-form"
