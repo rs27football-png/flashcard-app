@@ -5,9 +5,11 @@ import type {
   Card,
   CardProgress,
   Folder,
+  StudyOptions,
   StudySession,
   StudySet,
 } from '../types'
+import { DEFAULT_STUDY_OPTIONS } from '../study/options'
 
 /**
  * IndexedDB のスキーマ定義 ( specs.md §2 ).
@@ -36,6 +38,18 @@ db.version(1).stores({
   progress: 'cardId, setId, status, [setId+status]',
   sessions: 'setId',
   settings: 'id',
+})
+
+// v3.3 で StudySet に studyOptions を追加した. 索引は変わらないため stores() は
+// 呼ばず, 既存のセットに既定値を埋める移行だけを行う.
+// ( 新規に作られる DB では最初から createSet が値を入れるので, この処理は走らない )
+db.version(2).upgrade(async (tx) => {
+  await tx
+    .table('sets')
+    .toCollection()
+    .modify((set: { studyOptions?: StudyOptions }) => {
+      set.studyOptions ??= DEFAULT_STUDY_OPTIONS
+    })
 })
 
 /** ID の採番. specs.md の規約により crypto.randomUUID() を用いる */

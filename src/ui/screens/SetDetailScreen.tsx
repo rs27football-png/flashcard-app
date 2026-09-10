@@ -1,19 +1,26 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import type { Card, Folder, ProgressSummary } from '../../core/types'
+import type { Card, Folder, ProgressSummary, StudyOptions } from '../../core/types'
 import { listFolders } from '../../core/db/folders'
 import { listCards, setStarred } from '../../core/db/cards'
-import { getProgressSummary, getSet } from '../../core/db/sets'
+import { getProgressSummary, getSet, updateStudyOptions } from '../../core/db/sets'
+import { resetProgress } from '../../core/db/progress'
+import { normalizeStudyOptions } from '../../core/study/options'
 import { Breadcrumb } from '../components/Breadcrumb'
+import { Modal } from '../components/Modal'
 import { ProgressBar } from '../components/ProgressBar'
+import { StudyOptionsForm } from '../components/StudyOptionsForm'
 
 const EMPTY_SUMMARY: ProgressSummary = { total: 0, known: 0, learning: 0, unseen: 0 }
 
 /** S2 セット詳細. カード一覧と進捗サマリ ( specs.md §3, §4.2 ) */
 export function SetDetailScreen() {
   const { setId = '' } = useParams<{ setId: string }>()
+  const navigate = useNavigate()
   const [starredOnly, setStarredOnly] = useState(false)
+  const [studyOptions, setStudyOptions] = useState<StudyOptions | null>(null)
+  const [confirmingReset, setConfirmingReset] = useState(false)
 
   // 不在を null で返す. undefined のままだと「読み込み中」と区別できないため.
   const set = useLiveQuery(async () => (await getSet(setId)) ?? null, [setId])
@@ -54,13 +61,34 @@ export function SetDetailScreen() {
           <Link className="btn" to={`/sets/${set.id}/settings`}>
             セット設定
           </Link>
-          <Link className="btn btn--primary" to={`/sets/${set.id}/cards`}>
+          <Link className="btn" to={`/sets/${set.id}/cards`}>
             カードを編集
           </Link>
+          <button
+            type="button"
+            className="btn btn--primary"
+            disabled={cards.length === 0}
+            onClick={() => setStudyOptions(normalizeStudyOptions(set.studyOptions))}
+          >
+            暗記モード
+          </button>
         </div>
       </header>
 
       <ProgressBar summary={summary} />
+
+      <div className="toolbar">
+        {/* 「最初からやり直す」( specs.md §4.6.6 ) は結果画面にもあるが,
+            ラウンドの途中で戻したい場合のためにここからも辿れるようにする */}
+        <button
+          type="button"
+          className="btn btn--small"
+          disabled={summary.known + summary.learning === 0}
+          onClick={() => setConfirmingReset(true)}
+        >
+          進捗をリセット
+        </button>
+      </div>
 
       <div className="toolbar">
         <span className="toolbar__label">カード {cards.length} 枚</span>
@@ -100,7 +128,66 @@ export function SetDetailScreen() {
         </ul>
       )}
 
-      <p className="note">暗記モードと4択モードは段階3以降で追加します.</p>
+      <p className="note">4択モードは段階4で追加します.</p>
+
+      <Modal
+        open={confirmingReset}
+        title="進捗をリセット"
+        onClose={() => setConfirmingReset(false)}
+      >
+        <div className="form">
+          <p>
+            「{set.name}」の全カードの進捗を未学習に戻します。カードそのものは削除されません。
+          </p>
+          <div className="form__actions">
+            <button type="button" className="btn" onClick={() => setConfirmingReset(false)}>
+              キャンセル
+            </button>
+            <button
+              type="button"
+              className="btn btn--danger"
+              onClick={() => {
+                void resetProgress(set.id).then(() => setConfirmingReset(false))
+              }}
+            >
+              進捗を戻す
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={studyOptions !== null}
+        title="暗記モードを開始"
+        onClose={() => setStudyOptions(null)}
+      >
+        {studyOptions !== null && (
+          <div className="form">
+            <StudyOptionsForm
+              value={studyOptions}
+              onChange={setStudyOptions}
+              starredCount={cards.filter((card) => card.starred).length}
+            />
+            <div className="form__actions">
+              <button type="button" className="btn" onClick={() => setStudyOptions(null)}>
+                キャンセル
+              </button>
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={() => {
+                  // 次回の既定値として記憶する ( specs.md §2.7 )
+                  void updateStudyOptions(set.id, studyOptions).then(() =>
+                    navigate(`/sets/${set.id}/study`),
+                  )
+                }}
+              >
+                開始
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }
