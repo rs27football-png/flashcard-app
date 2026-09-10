@@ -1,0 +1,28 @@
+# 依存パッケージ ( npm install で復元できるためコミットしない )
+node_modules/
+
+# ビルド成果物 ( GitHub Actions が生成するためコミットしない )
+dist/
+dist-ssr/
+.vite/
+
+# 環境変数
+.env
+.env.*
+!.env.example
+
+# ログ
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# テストのカバレッジ
+coverage/
+
+# エディタ・OS が生成するファイル
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
