@@ -14,12 +14,16 @@ import { loadProgressMap, resetProgress, restoreStatus, setStatus } from '../../
 import { deleteSession, getSession, isSessionUsable, saveSession } from '../../core/db/sessions'
 import { buildLearningQueue, buildQueue, shuffle, type EmptyReason } from '../../core/study/buildQueue'
 import { normalizeStudyOptions } from '../../core/study/options'
+import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
+import { StudyOptionsForm } from '../components/StudyOptionsForm'
 
 /** これ以上動かしたら振り分けと見なす距離 ( ピクセル ) */
 const SWIPE_THRESHOLD = 80
 /** これ未満の移動はタップと見なし, カードを裏返す */
 const TAP_SLOP = 8
+/** 払ったカードが画面外へ抜けるまでの時間 ( ミリ秒 ). CSS の fly-out と揃える */
+const FLY_OUT_MS = 260
 
 type Phase =
   | { kind: 'loading' }
@@ -65,11 +69,23 @@ export function StudyScreen() {
   const [hintShown, setHintShown] = useState(false)
   const [dragX, setDragX] = useState(0)
   const [confirmingReset, setConfirmingReset] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
+  // 払ったカードは山から外して別の層で飛ばす. 山を先に次のカードへ進められるので,
+  // 抜けていく札の裏から次の札が現れる見え方になる ( specs.md §4.6.2 ).
+  const [flying, setFlying] = useState<{ text: string; direction: 1 | -1; from: number } | null>(
+    null,
+  )
+  // 掴んでいるかどうかは見た目に出るため, ref ではなく状態として持つ
+  const [held, setHeld] = useState(false)
   const dragStartRef = useRef<number | null>(null)
+  const flyTimerRef = useRef<number | null>(null)
 
   // 毎描画で作り直すと, これに依存する useCallback が無効になるため記憶しておく
   const cardById = useMemo(() => new Map(cards.map((card) => [card.id, card])), [cards])
   const currentCard = cardById.get(queue[index]) ?? null
+  /** 山の下で待っている次のカード. 輪郭だけを見せ, 内容は見せない */
+  const nextCard = cardById.get(queue[index + 1]) ?? null
+  const starredCount = cards.filter((card) => card.starred).length
   const knownInHistory = history.filter((decision) => decision.known).length
   const knownCount = baseCounts.known + knownInHistory
   const learningCount = baseCounts.learning + (history.length - knownInHistory)
@@ -77,6 +93,14 @@ export function StudyScreen() {
   // 学習中は意図的にライブクエリを使わない.
   // 判定のたびに進捗を書き込むため, 購読していると自分の書き込みでキューが
   // 組み直されてしまう. 開始時に一度だけ読み, 以降は画面内の状態で進める.
+  // 画面を離れたときに, 飛ばしている札の後始末が残らないようにする
+  useEffect(
+    () => () => {
+      if (flyTimerRef.current !== null) window.clearTimeout(flyTimerRef.current)
+    },
+    [],
+  )
+
   useEffect(() => {
     let cancelled = false
     const load = async () => {
@@ -233,22 +257,78 @@ export function StudyScreen() {
     persistSession(options, queue, index - 1, round)
   }, [options, history, queue, index, round, persistSession])
 
-  /** 残りのカードだけを並べ替える. すでに判定した分は動かさない */
+  /**
+   * 学習中に設定を変更し, その場で反映する ( specs.md §4.6.2 ).
+   *
+   * 判定済みの分の集計と進捗はそのまま残し, まだ提示していない残りだけを
+   * 新しい条件で組み直す. 設定を触るたびにラウンドが最初に戻ると流れが切れるため.
+   */
+  const applyOptions = useCallback(
+    (nextOptions: StudyOptions) => {
+      setOptions(nextOptions)
+      void updateStudyOptions(setId, nextOptions)
+
+      const answered = queue.slice(0, index)
+      const answeredIds = new Set(answered)
+      const candidates = cards
+        .filter((card) => !answeredIds.has(card.id))
+        .filter((card) => !nextOptions.starredOnly || card.starred)
+        .filter(
+          (card) =>
+            !nextOptions.trackProgress || progress.get(card.id)?.status !== 'known',
+        )
+      const ordered = nextOptions.shuffle
+        ? shuffle(candidates)
+        : [...candidates].sort((a, b) => a.order - b.order || a.createdAt - b.createdAt)
+      const nextQueue = [...answered, ...ordered.map((card) => card.id)]
+      setQueue(nextQueue)
+
+      if (nextQueue.length <= index) {
+        // 条件を絞った結果, 残りが無くなった場合はその場でラウンドを終える
+        void deleteSession(setId)
+        setPhase({ kind: 'result' })
+        return
+      }
+      if (nextOptions.trackProgress) {
+        persistSession(nextOptions, nextQueue, index, round)
+      } else {
+        // 進捗を保存しない設定に変えたら, 古い中断状態を残さない
+        void deleteSession(setId)
+      }
+    },
+    [setId, queue, index, cards, progress, round, persistSession],
+  )
+
   const toggleShuffle = useCallback(() => {
     if (options === null) return
-    const nextOptions = { ...options, shuffle: !options.shuffle }
-    setOptions(nextOptions)
-    void updateStudyOptions(setId, nextOptions)
+    applyOptions({ ...options, shuffle: !options.shuffle })
+  }, [options, applyOptions])
 
-    const remaining = queue
-      .slice(index)
-      .map((cardId) => cardById.get(cardId))
-      .filter((card): card is Card => card !== undefined)
-    const reordered = nextOptions.shuffle
-      ? shuffle(remaining)
-      : [...remaining].sort((a, b) => a.order - b.order || a.createdAt - b.createdAt)
-    setQueue([...queue.slice(0, index), ...reordered.map((card) => card.id)])
-  }, [options, queue, index, cardById, setId])
+  /**
+   * 判定を確定する. 札を別の層へ移してから山を進めるため,
+   * 抜けていく札の裏から次の札が現れる.
+   */
+  const commit = useCallback(
+    (known: boolean) => {
+      if (currentCard === null || options === null || flying !== null) return
+      // 判定と同時に山は次へ進むため, 見えていた面の文字をここで写し取っておく
+      const showingTerm = flipped ? options.front === 'definition' : options.front === 'term'
+      setFlying({
+        text: showingTerm ? currentCard.term : currentCard.definition,
+        direction: known ? 1 : -1,
+        from: dragX,
+      })
+      setDragX(0)
+      setHeld(false)
+      dragStartRef.current = null
+      void answer(known)
+      flyTimerRef.current = window.setTimeout(() => {
+        setFlying(null)
+        flyTimerRef.current = null
+      }, FLY_OUT_MS)
+    },
+    [currentCard, options, flipped, flying, dragX, answer],
+  )
 
   const restart = useCallback(async () => {
     if (options === null) return
@@ -268,18 +348,19 @@ export function StudyScreen() {
   useEffect(() => {
     if (phase.kind !== 'study') return
     const onKeyDown = (event: KeyboardEvent) => {
-      // 入力欄にフォーカスがあるときは横取りしない
+      // 入力欄にフォーカスがあるとき, およびダイアログを開いているあいだは横取りしない
       const target = event.target
       if (target instanceof HTMLElement && target.closest('input, textarea, select')) return
+      if (document.querySelector('dialog[open]') !== null) return
 
       switch (event.key) {
         case 'ArrowRight':
           event.preventDefault()
-          void answer(true)
+          commit(true)
           break
         case 'ArrowLeft':
           event.preventDefault()
-          void answer(false)
+          commit(false)
           break
         case ' ':
         case 'ArrowUp':
@@ -301,7 +382,7 @@ export function StudyScreen() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [phase.kind, answer, undo, toggleShuffle, navigate, setId])
+  }, [phase.kind, commit, undo, toggleShuffle, navigate, setId])
 
   if (phase.kind === 'loading') return <p className="empty">読み込み中…</p>
 
@@ -444,7 +525,10 @@ export function StudyScreen() {
       : options.front === 'term'
         ? currentCard.definition
         : currentCard.term
-  const swiping = Math.abs(dragX) >= SWIPE_THRESHOLD
+  const swipeProgress = Math.min(Math.abs(dragX) / SWIPE_THRESHOLD, 1)
+  const swiping = swipeProgress >= 1
+  const sideLabel = (showBack: boolean) =>
+    (showBack ? options.front === 'definition' : options.front === 'term') ? '用語' : '定義'
 
   return (
     <div className="screen study">
@@ -470,111 +554,153 @@ export function StudyScreen() {
           onClick={() => void undo()}
           disabled={history.length === 0}
         >
-          ← 1つ戻る
+          <Icon name="undo" size={15} />1つ戻る
         </button>
         <button
           type="button"
-          className={`btn btn--small ${options.shuffle ? 'btn--on' : ''}`}
-          onClick={toggleShuffle}
-          aria-pressed={options.shuffle}
+          className="btn btn--small"
+          onClick={() => setShowSettings(true)}
         >
-          シャッフル {options.shuffle ? 'オン' : 'オフ'}
+          <Icon name="settings" size={15} />
+          設定
         </button>
         <Link className="btn btn--small" to={`/sets/${setId}`}>
+          <Icon name="close" size={15} />
           終了
         </Link>
       </div>
 
-      {currentCard !== null && (
-        <div
-          className="study__card-area"
-          onPointerDown={(event) => {
-            event.currentTarget.setPointerCapture(event.pointerId)
-            dragStartRef.current = event.clientX
-          }}
-          onPointerMove={(event) => {
-            if (dragStartRef.current === null) return
-            setDragX(event.clientX - dragStartRef.current)
-          }}
-          onPointerUp={(event) => {
-            const start = dragStartRef.current
-            dragStartRef.current = null
-            event.currentTarget.releasePointerCapture(event.pointerId)
-            if (start === null) return
-            const delta = event.clientX - start
-            setDragX(0)
-            if (Math.abs(delta) >= SWIPE_THRESHOLD) {
-              // 右へ払えば「知っている」, 左へ払えば「学習中」( specs.md §4.6.2 )
-              void answer(delta > 0)
-            } else if (Math.abs(delta) < TAP_SLOP) {
-              setFlipped((previous) => !previous)
-            }
-          }}
-          onPointerCancel={() => {
-            dragStartRef.current = null
-            setDragX(0)
-          }}
-        >
+      <div className="study__card-area">
+        {currentCard !== null && (
           <div
-            className={`study__card ${flipped ? 'study__card--flipped' : ''}`}
-            style={{
-              transform: `translateX(${dragX}px) rotate(${dragX / 25}deg)`,
-              // 判定される向きが分かるよう, 一定量を超えたら枠の色を変える
-              borderColor: swiping
-                ? dragX > 0
-                  ? 'var(--known)'
-                  : 'var(--learning)'
-                : undefined,
+            className="stack"
+            onPointerDown={(event) => {
+              if (flying !== null) return
+              event.currentTarget.setPointerCapture(event.pointerId)
+              dragStartRef.current = event.clientX
+              setHeld(true)
+            }}
+            onPointerMove={(event) => {
+              if (dragStartRef.current === null) return
+              setDragX(event.clientX - dragStartRef.current)
+            }}
+            onPointerUp={(event) => {
+              const startX = dragStartRef.current
+              dragStartRef.current = null
+              setHeld(false)
+              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                event.currentTarget.releasePointerCapture(event.pointerId)
+              }
+              if (startX === null) return
+              const delta = event.clientX - startX
+              if (Math.abs(delta) >= SWIPE_THRESHOLD) {
+                // 右へ払えば「知っている」, 左へ払えば「学習中」( specs.md §4.6.2 )
+                commit(delta > 0)
+              } else {
+                setDragX(0)
+                if (Math.abs(delta) < TAP_SLOP) setFlipped((previous) => !previous)
+              }
+            }}
+            onPointerCancel={() => {
+              dragStartRef.current = null
+              setHeld(false)
+              setDragX(0)
             }}
           >
-            <div className="study__face">
-              <p className="study__text">{flipped ? backText : frontText}</p>
-              <span className="study__side">
-                {flipped
-                  ? options.front === 'term'
-                    ? '定義'
-                    : '用語'
-                  : options.front === 'term'
-                    ? '用語'
-                    : '定義'}
-              </span>
-            </div>
-          </div>
+            {/* 後ろで待っている札. 内容は見せず, 手前が離れるほど迫り上がる */}
+            {nextCard !== null && (
+              <div
+                className="stack__card stack__card--behind"
+                aria-hidden="true"
+                style={{
+                  transform: `translateY(${10 - 10 * swipeProgress}px) scale(${0.94 + 0.06 * swipeProgress})`,
+                }}
+              />
+            )}
 
-          {currentCard.hint !== '' && (
-            <div className="study__hint">
-              {hintShown ? (
-                <p className="note">ヒント: {currentCard.hint}</p>
-              ) : (
-                <button
-                  type="button"
-                  className="btn btn--small"
-                  // カードのタップ ( 反転 ) に伝播させない
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onClick={() => setHintShown(true)}
+            <div
+              className={`stack__card stack__card--top ${flipped ? 'stack__card--flipped' : ''} ${
+                held ? 'stack__card--held' : ''
+              }`}
+              style={{
+                transform: `translateX(${dragX}px) rotate(${dragX / 25}deg)`,
+                borderColor: swiping
+                  ? dragX > 0
+                    ? 'var(--known)'
+                    : 'var(--learning)'
+                  : undefined,
+              }}
+            >
+              <div className="study__face">
+                <p className="study__text">{flipped ? backText : frontText}</p>
+                <span className="study__side">{sideLabel(flipped)}</span>
+              </div>
+              {swipeProgress > 0.2 && (
+                <span
+                  className={`stack__verdict ${
+                    dragX > 0 ? 'stack__verdict--known' : 'stack__verdict--learning'
+                  }`}
+                  style={{ opacity: swipeProgress }}
                 >
-                  ヒントを見る
-                </button>
+                  {dragX > 0 ? '知っている' : '学習中'}
+                </span>
               )}
             </div>
-          )}
+
+            {/* 判定した札. 山からは外れているので, 裏から次の札が見えている */}
+            {flying !== null && (
+              <div
+                className={`stack__card stack__card--flying ${
+                  flying.direction > 0 ? 'stack__card--fly-right' : 'stack__card--fly-left'
+                }`}
+                aria-hidden="true"
+                style={{
+                  transform: `translateX(${flying.from}px) rotate(${flying.from / 25}deg)`,
+                  borderColor: flying.direction > 0 ? 'var(--known)' : 'var(--learning)',
+                }}
+              >
+                <div className="study__face">
+                  <p className="study__text">{flying.text}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="study__hint">
+          {currentCard !== null && currentCard.hint !== '' ? (
+            hintShown ? (
+              <p className="note">ヒント: {currentCard.hint}</p>
+            ) : (
+              <button
+                type="button"
+                className="btn btn--small"
+                onClick={() => setHintShown(true)}
+              >
+                <Icon name="lightbulb" size={15} />
+                ヒントを見る
+              </button>
+            )
+          ) : null}
         </div>
-      )}
+      </div>
 
       <div className="study__actions">
         <button
           type="button"
           className="btn btn--judge btn--judge-learning"
-          onClick={() => void answer(false)}
+          onClick={() => commit(false)}
         >
-          ✕<span className="btn__label">学習中</span>
+          <Icon name="close" size={26} />
+          <span className="btn__label">学習中</span>
         </button>
         <button
           type="button"
           className="btn btn--judge btn--judge-known"
-          onClick={() => void answer(true)}
+          onClick={() => commit(true)}
         >
-          ✓<span className="btn__label">知っている</span>
+          <Icon name="check" size={26} />
+          <span className="btn__label">知っている</span>
         </button>
       </div>
 
@@ -582,6 +708,28 @@ export function StudyScreen() {
         → 知っている / ← 学習中 / Space 裏返す / Backspace 1つ戻る / S シャッフル / H ヒント /
         Esc 終了
       </p>
+
+      <Modal open={showSettings} title="学習の設定" onClose={() => setShowSettings(false)}>
+        <div className="form">
+          {/* 変更はその場で効く. 判定済みの分はそのままに, 残りだけを組み直す */}
+          <StudyOptionsForm
+            value={options}
+            onChange={applyOptions}
+            starredCount={starredCount}
+            idPrefix="study-live"
+          />
+          <p className="note">変更はすぐに反映されます. これまでの判定は残ります.</p>
+          <div className="form__actions">
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={() => setShowSettings(false)}
+            >
+              閉じる
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

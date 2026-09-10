@@ -13,10 +13,12 @@ import {
   type FolderContents,
   type FolderDeleteMode,
 } from '../../core/db/folders'
-import { countCardsPerSet, createSet, listAllSets } from '../../core/db/sets'
+import { countCardsPerSet, createSet, listAllSets, moveSet } from '../../core/db/sets'
 import { FolderSelect } from '../components/FolderSelect'
+import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
 import { useExpandedFolders } from '../hooks/useExpandedFolders'
+import { DROP_ATTRIBUTE, ROOT_DROP_VALUE, useSetDrag } from '../hooks/useSetDrag'
 
 /** 開いているダイアログ. 種類ごとに必要な値をまとめて持たせ, 取り違えを型で防ぐ */
 type Dialog =
@@ -39,6 +41,11 @@ export function HomeScreen() {
   const { expanded, toggle, expand } = useExpandedFolders()
   const [dialog, setDialog] = useState<Dialog>(CLOSED)
   const [error, setError] = useState<string | null>(null)
+  const { drag, start: startDrag } = useSetDrag((setId, folderId) => {
+    void moveSet(setId, folderId)
+    // 落とし先が閉じたままだと移動先が見えないので開いておく
+    if (folderId !== null) expand(folderId)
+  })
 
   const close = () => {
     setDialog(CLOSED)
@@ -96,29 +103,36 @@ export function HomeScreen() {
         <h1 className="screen__title">単語帳アプリ</h1>
         <div className="screen__actions">
           <Link className="btn" to="/import">
-            テキストから取り込み
+            <Icon name="import" />
+            インポート
           </Link>
           <button
             type="button"
             className="btn"
             onClick={() => setDialog({ type: 'createFolder', parentId: null })}
           >
-            + フォルダ
+            <Icon name="folder-plus" />
+            フォルダ
           </button>
           <button
             type="button"
             className="btn btn--primary"
             onClick={() => setDialog({ type: 'createSet', folderId: null })}
           >
-            + 学習セット
+            <Icon name="set-plus" />
+            学習セット
           </button>
         </div>
       </header>
 
-      <main>
+      {/* 外側をまるごと根の落下先にする. 内側のフォルダの節が優先して拾われる */}
+      <main
+        {...{ [DROP_ATTRIBUTE]: ROOT_DROP_VALUE }}
+        className={`tree-root ${drag !== null && drag.overFolderId === null ? 'tree-root--over' : ''}`}
+      >
         {isEmpty ? (
           <p className="empty">
-            まだ何もありません. 「+ 学習セット」から最初のセットを作成してください.
+            まだ何もありません. 「学習セット」から最初のセットを作成してください.
           </p>
         ) : (
           <ul className="tree">
@@ -131,8 +145,13 @@ export function HomeScreen() {
                 cardCounts={cardCounts}
                 depth={0}
                 expanded={expanded}
+                dragOverFolderId={drag?.overFolderId}
+                draggingSetId={drag?.setId ?? null}
                 onToggle={toggle}
                 onMenu={(target) => setDialog({ type: 'folderMenu', folder: target })}
+                onAddSet={(folderId) => setDialog({ type: 'createSet', folderId })}
+                onAddFolder={(parentId) => setDialog({ type: 'createFolder', parentId })}
+                onGrip={startDrag}
               />
             ))}
             {rootSets.map((set) => (
@@ -141,11 +160,35 @@ export function HomeScreen() {
                 set={set}
                 cardCount={cardCounts.get(set.id) ?? 0}
                 depth={0}
+                dragging={drag?.setId === set.id}
+                onGrip={startDrag}
               />
             ))}
           </ul>
         )}
       </main>
+
+      {drag !== null && (
+        <>
+          {/*
+            ルートへ戻す落下先. フォルダの節は配下の余白まで覆うため, ツリーの下端に
+            落としてもフォルダに入ってしまう. 画面上端に固定した帯を別に用意する.
+            固定配置にしているのは, ドラッグの最中に行がずれないようにするため.
+          */}
+          <div
+            {...{ [DROP_ATTRIBUTE]: ROOT_DROP_VALUE }}
+            className={`drop-root ${drag.overFolderId === null ? 'drop-root--over' : ''}`}
+          >
+            <Icon name="folder" />
+            ここへ落とすとルート ( 最上位 ) へ移動
+          </div>
+          {/* 掴んでいるものを指の先に見せる. 下の要素を拾えるよう pointer-events は無効 */}
+          <div className="drag-ghost" style={{ left: drag.x, top: drag.y }}>
+            <Icon name="set" />
+            {drag.label}
+          </div>
+        </>
+      )}
 
       <Modal
         open={dialog.type === 'folderMenu'}
@@ -265,8 +308,14 @@ interface FolderNodeProps {
   cardCounts: Map<string, number>
   depth: number
   expanded: Set<string>
+  /** ドラッグ中の落下先. null は根, undefined は落下先の外 */
+  dragOverFolderId: string | null | undefined
+  draggingSetId: string | null
   onToggle: (folderId: string) => void
   onMenu: (folder: Folder) => void
+  onAddSet: (folderId: string) => void
+  onAddFolder: (parentId: string) => void
+  onGrip: (event: React.PointerEvent, setId: string, label: string) => void
 }
 
 function FolderNode({
@@ -276,8 +325,13 @@ function FolderNode({
   cardCounts,
   depth,
   expanded,
+  dragOverFolderId,
+  draggingSetId,
   onToggle,
   onMenu,
+  onAddSet,
+  onAddFolder,
+  onGrip,
 }: FolderNodeProps) {
   const isOpen = expanded.has(folder.id)
   const childFolders = listChildFolders(folders, folder.id)
@@ -285,10 +339,16 @@ function FolderNode({
     .filter((set) => set.folderId === folder.id)
     .sort((a, b) => a.order - b.order || a.createdAt - b.createdAt)
   const isLeaf = childFolders.length === 0 && childSets.length === 0
+  const isDropTarget = dragOverFolderId === folder.id
 
   return (
-    <li className="tree__node">
-      <div className="row" style={{ paddingInlineStart: `${depth * 1.25 + 0.5}rem` }}>
+    // 節ごと落下先にする. 配下のどこへ落としてもこのフォルダに入る.
+    // 入れ子のフォルダでは内側の節が先に拾われる.
+    <li className="tree__node" {...{ [DROP_ATTRIBUTE]: folder.id }}>
+      <div
+        className={`row ${isDropTarget ? 'row--drop' : ''}`}
+        style={{ paddingInlineStart: `${depth * 1.25 + 0.5}rem` }}
+      >
         <button
           type="button"
           className="row__twisty"
@@ -297,13 +357,34 @@ function FolderNode({
           aria-label={isOpen ? '閉じる' : '開く'}
           disabled={isLeaf}
         >
-          {isLeaf ? '·' : isOpen ? '▾' : '▸'}
+          {isLeaf ? (
+            <span className="row__twisty-dot" aria-hidden="true" />
+          ) : (
+            <Icon name={isOpen ? 'chevron-down' : 'chevron-right'} size={16} />
+          )}
         </button>
         <button type="button" className="row__main" onClick={() => onToggle(folder.id)}>
-          <span className="row__icon" aria-hidden="true">
-            📁
-          </span>
+          <Icon name="folder" className="icon--folder" />
           <span className="row__label">{folder.name}</span>
+        </button>
+        {/* VS Code のように行へ直接「追加」を置く. 目的のフォルダを選び直す手間を省く */}
+        <button
+          type="button"
+          className="btn btn--icon"
+          aria-label={`${folder.name} に学習セットを追加`}
+          title="学習セットを追加"
+          onClick={() => onAddSet(folder.id)}
+        >
+          <Icon name="set-plus" size={17} />
+        </button>
+        <button
+          type="button"
+          className="btn btn--icon"
+          aria-label={`${folder.name} に下位フォルダを追加`}
+          title="下位フォルダを追加"
+          onClick={() => onAddFolder(folder.id)}
+        >
+          <Icon name="folder-plus" size={17} />
         </button>
         <button
           type="button"
@@ -311,7 +392,7 @@ function FolderNode({
           aria-label={`${folder.name} の操作`}
           onClick={() => onMenu(folder)}
         >
-          ⋯
+          <Icon name="more" size={17} />
         </button>
       </div>
 
@@ -326,8 +407,13 @@ function FolderNode({
               cardCounts={cardCounts}
               depth={depth + 1}
               expanded={expanded}
+              dragOverFolderId={dragOverFolderId}
+              draggingSetId={draggingSetId}
               onToggle={onToggle}
               onMenu={onMenu}
+              onAddSet={onAddSet}
+              onAddFolder={onAddFolder}
+              onGrip={onGrip}
             />
           ))}
           {childSets.map((set) => (
@@ -336,6 +422,8 @@ function FolderNode({
               set={set}
               cardCount={cardCounts.get(set.id) ?? 0}
               depth={depth + 1}
+              dragging={draggingSetId === set.id}
+              onGrip={onGrip}
             />
           ))}
         </ul>
@@ -348,19 +436,33 @@ function SetRow({
   set,
   cardCount,
   depth,
+  dragging,
+  onGrip,
 }: {
   set: StudySet
   cardCount: number
   depth: number
+  dragging: boolean
+  onGrip: (event: React.PointerEvent, setId: string, label: string) => void
 }) {
   return (
     <li className="tree__node">
-      <div className="row" style={{ paddingInlineStart: `${depth * 1.25 + 0.5}rem` }}>
-        <span className="row__twisty" aria-hidden="true" />
+      <div
+        className={`row ${dragging ? 'row--dragging' : ''}`}
+        style={{ paddingInlineStart: `${depth * 1.25 + 0.5}rem` }}
+      >
+        {/* つまみだけを掴めるようにして, 一覧の縦スクロールと競合させない */}
+        <button
+          type="button"
+          className="row__grip"
+          aria-label={`${set.name} を掴んで移動`}
+          title="ドラッグしてフォルダへ移動"
+          onPointerDown={(event) => onGrip(event, set.id, set.name)}
+        >
+          <Icon name="grip" size={16} />
+        </button>
         <Link to={`/sets/${set.id}`} className="row__main">
-          <span className="row__icon" aria-hidden="true">
-            🗂
-          </span>
+          <Icon name="set" className="icon--set" />
           <span className="row__label">{set.name}</span>
           <span className="row__meta">{cardCount} 枚</span>
         </Link>

@@ -135,3 +135,17 @@ export async function updateStudyOptions(
 ): Promise<void> {
   await db.sets.update(setId, { studyOptions })
 }
+
+/**
+ * 学習セットを別のフォルダへ移す ( specs.md §4.1, §4.2 ).
+ * 移動先の末尾に置く. 元の order のままだと移動先の既存セットと重なるため.
+ */
+export async function moveSet(setId: string, folderId: string | null): Promise<void> {
+  const current = await db.sets.get(setId)
+  if (current === undefined || current.folderId === folderId) return
+  await db.sets.update(setId, {
+    folderId,
+    order: nextOrder(await listSetsInFolder(folderId)),
+    updatedAt: Date.now(),
+  })
+}
