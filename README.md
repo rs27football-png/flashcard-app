@@ -8,7 +8,7 @@
 
 ## 状態
 
-段階0 ( 開発環境の構築と GitHub Pages への自動公開 ) が完了. 次は段階1 ( データ層と CRUD ).
+段階1 ( データ層とフォルダ / セット / カードの CRUD ) まで完了. 次は段階2 ( テキストインポート ).
 
 公開先: https://rs27football-png.github.io/flashcard-app/
 
