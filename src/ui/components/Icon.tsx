@@ -31,6 +31,7 @@ export type IconName =
   | 'sort'
   | 'lightbulb'
   | 'more'
+  | 'home'
 
 /** 塗りではなく線で描くため, すべて d 属性のみで表せる */
 const PATHS: Record<IconName, string> = {
@@ -61,6 +62,7 @@ const PATHS: Record<IconName, string> = {
   sort: 'M11 5h10 M11 9h7 M11 13h4 M3 17l3 3 3-3 M6 4v16',
   lightbulb: 'M9 18h6 M10 22h4 M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z',
   more: 'M12 12h.01 M19 12h.01 M5 12h.01',
+  home: 'M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z M9 21v-7h6v7',
 }
 
 /** 点で表すアイコンは線端を丸めた極短線として描くため, 単独で塗りを持たせる */

@@ -276,8 +276,19 @@ body {
 }
 
 .breadcrumb__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.375rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: var(--radius);
   color: var(--accent);
   text-decoration: none;
+  vertical-align: 0.05em;
+}
+
+.breadcrumb__link:hover {
+  background-color: color-mix(in srgb, var(--accent) 15%, transparent);
 }
 
 .breadcrumb__sep {
@@ -819,23 +830,28 @@ body {
 }
 
 /* どちらへ払おうとしているかを, 離す前に示す */
+/*
+ * 払う向きに寄せると, 払いきる前にカードの端ごと画面外へ出てしまい読めなくなる.
+ * 上端の中央に置き, 最後まで見えるようにする.
+ */
 .stack__verdict {
   position: absolute;
   top: 0.75rem;
-  padding: 0.125rem 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.125rem 0.625rem;
   border: 2px solid currentcolor;
   border-radius: 999px;
   font-size: 0.8125rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .stack__verdict--known {
-  right: 0.75rem;
   color: var(--known);
 }
 
 .stack__verdict--learning {
-  left: 0.75rem;
   color: var(--learning);
 }
 
@@ -893,14 +909,16 @@ body {
 .btn--judge {
   flex-direction: column;
   gap: 0.125rem;
-  width: 5.5rem;
-  min-height: 4rem;
+  /* 長いほうの「知っている」が1行で収まる幅に, 両方を揃える */
+  width: 7.5rem;
+  min-height: 4.25rem;
   border-width: 2px;
   font-size: 1.5rem;
 }
 
 .btn__label {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
+  white-space: nowrap;
 }
 
 .btn--judge-learning {
