@@ -5,11 +5,12 @@ import type {
   Card,
   CardProgress,
   Folder,
+  QuizOptions,
   StudyOptions,
   StudySession,
   StudySet,
 } from '../types'
-import { DEFAULT_STUDY_OPTIONS } from '../study/options'
+import { DEFAULT_QUIZ_OPTIONS, DEFAULT_STUDY_OPTIONS } from '../study/options'
 
 /**
  * IndexedDB のスキーマ定義 ( specs.md §2 ).
@@ -49,6 +50,17 @@ db.version(2).upgrade(async (tx) => {
     .toCollection()
     .modify((set: { studyOptions?: StudyOptions }) => {
       set.studyOptions ??= DEFAULT_STUDY_OPTIONS
+    })
+})
+
+// v3.6 で StudySet に quizOptions を追加した. 版2と同じく索引は変わらないため,
+// 既存のセットに既定値を埋める移行だけを行う.
+db.version(3).upgrade(async (tx) => {
+  await tx
+    .table('sets')
+    .toCollection()
+    .modify((set: { quizOptions?: QuizOptions }) => {
+      set.quizOptions ??= DEFAULT_QUIZ_OPTIONS
     })
 })
 
