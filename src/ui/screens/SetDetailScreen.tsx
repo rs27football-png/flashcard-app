@@ -48,7 +48,12 @@ export function SetDetailScreen() {
 
   return (
     <div className="screen">
-      <Breadcrumb folders={folders} folderId={set.folderId} current={set.name} />
+      <Breadcrumb
+        folders={folders}
+        folderId={set.folderId}
+        current={set.name}
+        currentSetId={set.id}
+      />
 
       <header className="screen__head">
         <div>

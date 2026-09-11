@@ -147,7 +147,12 @@ export function CardEditScreen() {
 
   return (
     <div className="screen">
-      <Breadcrumb folders={folders} folderId={set.folderId} current={set.name} />
+      <Breadcrumb
+        folders={folders}
+        folderId={set.folderId}
+        current={set.name}
+        currentSetId={set.id}
+      />
 
       <header className="screen__head">
         <h1 className="screen__title">カードを編集</h1>

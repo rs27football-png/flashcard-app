@@ -51,7 +51,12 @@ function SetSettingsForm({ set, folders }: { set: StudySet; folders: readonly Fo
 
   return (
     <div className="screen">
-      <Breadcrumb folders={folders} folderId={set.folderId} current={set.name} />
+      <Breadcrumb
+        folders={folders}
+        folderId={set.folderId}
+        current={set.name}
+        currentSetId={set.id}
+      />
 
       <header className="screen__head">
         <h1 className="screen__title">セット設定</h1>
