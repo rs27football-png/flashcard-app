@@ -1,5 +1,5 @@
-import type { ProgressSummary, StudyOptions, StudySet } from '../types'
-import { DEFAULT_STUDY_OPTIONS } from '../study/options'
+import type { ProgressSummary, QuizOptions, StudyOptions, StudySet } from '../types'
+import { DEFAULT_QUIZ_OPTIONS, DEFAULT_STUDY_OPTIONS } from '../study/options'
 import { deleteCardsOfSet } from './cards'
 import { db, newId, nextOrder } from './db'
 
@@ -37,6 +37,7 @@ export async function createSet(input: StudySetInput): Promise<StudySet> {
     enableImages: false,
     enableMath: false,
     studyOptions: DEFAULT_STUDY_OPTIONS,
+    quizOptions: DEFAULT_QUIZ_OPTIONS,
     createdAt: now,
     updatedAt: now,
   }
@@ -148,4 +149,9 @@ export async function moveSet(setId: string, folderId: string | null): Promise<v
     order: nextOrder(await listSetsInFolder(folderId)),
     updatedAt: Date.now(),
   })
+}
+
+/** 4択モードの出題オプションを記憶する ( specs.md §2.7 ) */
+export async function updateQuizOptions(setId: string, quizOptions: QuizOptions): Promise<void> {
+  await db.sets.update(setId, { quizOptions })
 }

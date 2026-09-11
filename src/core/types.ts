@@ -33,6 +33,8 @@ export interface StudySet {
   enableMath: boolean
   /** 当該セットで最後に使用した学習オプション ( specs.md §2.2, §2.7 ) */
   studyOptions: StudyOptions
+  /** 当該セットで最後に使用した4択モードの出題オプション ( specs.md §2.2, §2.7 ) */
+  quizOptions: QuizOptions
   createdAt: number
   updatedAt: number
 }
@@ -96,6 +98,19 @@ export interface CardProgress {
 export interface StudyOptions {
   trackProgress: boolean
   starredOnly: boolean
+  front: 'term' | 'definition'
+  shuffle: boolean
+}
+
+/**
+ * 4択モードの出題オプション ( specs.md §2.7, v3.6 で追加 ).
+ * 暗記モードとは既定値と選択肢が異なるため別に持つ.
+ */
+export interface QuizOptions {
+  starredOnly: boolean
+  /** 学習中のカードのみ ( specs.md §4.7.1 ) */
+  learningOnly: boolean
+  /** 問題文にする側 */
   front: 'term' | 'definition'
   shuffle: boolean
 }

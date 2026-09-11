@@ -1,4 +1,4 @@
-import type { StudyOptions } from '../types'
+import type { QuizOptions, StudyOptions } from '../types'
 
 /** 学習オプションの既定値 ( specs.md §2.7 ) */
 export const DEFAULT_STUDY_OPTIONS: StudyOptions = {
@@ -16,4 +16,17 @@ export const DEFAULT_STUDY_OPTIONS: StudyOptions = {
  */
 export function normalizeStudyOptions(value: Partial<StudyOptions> | undefined): StudyOptions {
   return { ...DEFAULT_STUDY_OPTIONS, ...value }
+}
+
+/** 4択モードの出題オプションの既定値. 出題順は既定でシャッフルとする ( specs.md §4.7.1 ) */
+export const DEFAULT_QUIZ_OPTIONS: QuizOptions = {
+  starredOnly: false,
+  learningOnly: false,
+  front: 'term',
+  shuffle: true,
+}
+
+/** 保存されている値を QuizOptions として読み直す. v3.6 より前のセットには値がない */
+export function normalizeQuizOptions(value: Partial<QuizOptions> | undefined): QuizOptions {
+  return { ...DEFAULT_QUIZ_OPTIONS, ...value }
 }
