@@ -14,9 +14,12 @@ import {
   type FolderDeleteMode,
 } from '../../core/db/folders'
 import { countCardsPerSet, createSet, listAllSets, moveSet } from '../../core/db/sets'
+import { copyFolder } from '../../core/db/setOps'
+import { CopySetDialog } from '../components/CopySetDialog'
 import { FolderSelect } from '../components/FolderSelect'
 import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
+import { SetActionsSheet } from '../components/SetActionsSheet'
 import { useExpandedFolders } from '../hooks/useExpandedFolders'
 import { DROP_ATTRIBUTE, ROOT_DROP_VALUE, useSetDrag } from '../hooks/useSetDrag'
 
@@ -29,6 +32,8 @@ type Dialog =
   | { type: 'moveFolder'; folder: Folder }
   | { type: 'deleteFolder'; folder: Folder; contents: FolderContents }
   | { type: 'createSet'; folderId: string | null }
+  | { type: 'setMenu'; set: StudySet }
+  | { type: 'copySet'; set: StudySet }
 
 const CLOSED: Dialog = { type: 'none' }
 
@@ -74,6 +79,13 @@ export function HomeScreen() {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '移動に失敗しました.')
     }
+  }
+
+  const handleCopyFolder = async (folder: Folder) => {
+    await copyFolder(folder.id)
+    // 複製は元と同じ階層に並ぶ. 親が閉じていると見えないため開いておく
+    if (folder.parentId !== null) expand(folder.parentId)
+    close()
   }
 
   const handleDeleteFolder = async (folder: Folder, mode: FolderDeleteMode) => {
@@ -125,6 +137,12 @@ export function HomeScreen() {
         </div>
       </header>
 
+      {/* 検索への入口 ( specs.md §3 S1, §4.10 ) */}
+      <Link to="/search" className="search-entry">
+        <Icon name="search" />
+        用語・定義・セット名を検索
+      </Link>
+
       {/* 外側をまるごと根の落下先にする. 内側のフォルダの節が優先して拾われる */}
       <main
         {...{ [DROP_ATTRIBUTE]: ROOT_DROP_VALUE }}
@@ -152,6 +170,7 @@ export function HomeScreen() {
                 onAddSet={(folderId) => setDialog({ type: 'createSet', folderId })}
                 onAddFolder={(parentId) => setDialog({ type: 'createFolder', parentId })}
                 onGrip={startDrag}
+                onSetMenu={(target) => setDialog({ type: 'setMenu', set: target })}
               />
             ))}
             {rootSets.map((set) => (
@@ -162,6 +181,7 @@ export function HomeScreen() {
                 depth={0}
                 dragging={drag?.setId === set.id}
                 onGrip={startDrag}
+                onMenu={(target) => setDialog({ type: 'setMenu', set: target })}
               />
             ))}
           </ul>
@@ -224,6 +244,13 @@ export function HomeScreen() {
               onClick={() => setDialog({ type: 'moveFolder', folder: dialog.folder })}
             >
               別のフォルダへ移動
+            </button>
+            <button
+              type="button"
+              className="menu__item"
+              onClick={() => void handleCopyFolder(dialog.folder)}
+            >
+              フォルダをコピー ( 中身ごと )
             </button>
             <button
               type="button"
@@ -297,6 +324,27 @@ export function HomeScreen() {
           />
         )}
       </Modal>
+
+      {dialog.type === 'setMenu' && (
+        <SetActionsSheet
+          set={dialog.set}
+          onClose={close}
+          onCopy={() => setDialog({ type: 'copySet', set: dialog.set })}
+        />
+      )}
+
+      {dialog.type === 'copySet' && (
+        <CopySetDialog
+          set={dialog.set}
+          folders={folders}
+          onClose={close}
+          onCopied={(_, folderId) => {
+            // ホームからのコピーはその場に留まり, 置いた先を開いて見せる
+            if (folderId !== null) expand(folderId)
+            close()
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -316,6 +364,8 @@ interface FolderNodeProps {
   onAddSet: (folderId: string) => void
   onAddFolder: (parentId: string) => void
   onGrip: (event: React.PointerEvent, setId: string, label: string) => void
+  /** 学習セットの行の ⋯ ( specs.md §4.9 ) */
+  onSetMenu: (set: StudySet) => void
 }
 
 function FolderNode({
@@ -332,6 +382,7 @@ function FolderNode({
   onAddSet,
   onAddFolder,
   onGrip,
+  onSetMenu,
 }: FolderNodeProps) {
   const isOpen = expanded.has(folder.id)
   const childFolders = listChildFolders(folders, folder.id)
@@ -414,6 +465,7 @@ function FolderNode({
               onAddSet={onAddSet}
               onAddFolder={onAddFolder}
               onGrip={onGrip}
+              onSetMenu={onSetMenu}
             />
           ))}
           {childSets.map((set) => (
@@ -424,6 +476,7 @@ function FolderNode({
               depth={depth + 1}
               dragging={draggingSetId === set.id}
               onGrip={onGrip}
+              onMenu={onSetMenu}
             />
           ))}
         </ul>
@@ -438,12 +491,14 @@ function SetRow({
   depth,
   dragging,
   onGrip,
+  onMenu,
 }: {
   set: StudySet
   cardCount: number
   depth: number
   dragging: boolean
   onGrip: (event: React.PointerEvent, setId: string, label: string) => void
+  onMenu: (set: StudySet) => void
 }) {
   return (
     <li className="tree__node">
@@ -466,6 +521,15 @@ function SetRow({
           <span className="row__label">{set.name}</span>
           <span className="row__meta">{cardCount} 枚</span>
         </Link>
+        {/* 詳細を開かずにコピー・統合・分割できるようにする ( specs.md §4.9 ) */}
+        <button
+          type="button"
+          className="btn btn--icon"
+          aria-label={`${set.name} の操作`}
+          onClick={() => onMenu(set)}
+        >
+          <Icon name="more" size={17} />
+        </button>
       </div>
     </li>
   )

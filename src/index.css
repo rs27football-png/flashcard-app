@@ -1629,3 +1629,323 @@ body {
 .wrong-item__chosen {
   color: var(--danger);
 }
+
+
+/* ---- メニュー項目にアイコンを並べる ---- */
+
+.menu__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ---- 検索 ( S8 ) ---- */
+
+.search-entry {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--surface);
+  color: var(--fg-muted);
+  font-size: 0.9375rem;
+  text-decoration: none;
+}
+
+.search-entry:hover {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--surface);
+  color: var(--fg-muted);
+}
+
+.search-bar:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* 枠は外側の .search-bar が受け持つ */
+.search-bar__input {
+  border: none;
+  background: none;
+  padding-inline: 0;
+}
+
+.search-bar__input:focus-visible {
+  outline: none;
+}
+
+.search-scope {
+  margin-top: 0.75rem;
+}
+
+.search-group {
+  margin-top: 1.5rem;
+}
+
+.search-group__title {
+  margin: 0 0 0.25rem;
+  color: var(--fg-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.search-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.search-hit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.75rem 0.25rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.search-hit:hover {
+  background-color: var(--surface);
+}
+
+.search-hit__term {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* 定義は長くなりやすいため3行で打ち切り, 一覧の見通しを保つ */
+.search-hit__definition {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--fg-muted);
+  font-size: 0.9375rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.search-hit__hint {
+  color: var(--fg-muted);
+  font-size: 0.8125rem;
+}
+
+.search-hit__where {
+  color: var(--fg-muted);
+  font-size: 0.75rem;
+}
+
+mark.hit {
+  padding: 0 0.0625rem;
+  border-radius: 3px;
+  background-color: color-mix(in srgb, var(--learning) 40%, transparent);
+  color: inherit;
+}
+
+/* 検索結果から来たカードを一時的に強調する */
+.cards__item--flash {
+  animation: card-flash 2.4s ease-out;
+}
+
+@keyframes card-flash {
+  0%,
+  30% {
+    background-color: color-mix(in srgb, var(--learning) 30%, transparent);
+  }
+
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* ---- 統合・分割 ( specs.md §4.9 ) ---- */
+
+.pick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.pick-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--surface);
+  color: var(--fg);
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pick-row--on {
+  border-color: var(--accent);
+  background-color: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+
+.pick-box {
+  flex: 0 0 auto;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid var(--fg-muted);
+  border-radius: 5px;
+}
+
+/* 選んだ順の番号. この順にカードが並ぶ */
+.pick-num {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background-color: var(--accent);
+  color: var(--accent-fg);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.pick-row__main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pick-row__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pick-row__path {
+  color: var(--fg-muted);
+  font-size: 0.75rem;
+}
+
+.pick-row__meta {
+  flex: 0 0 auto;
+  color: var(--fg-muted);
+  font-size: 0.8125rem;
+}
+
+.pick-tag {
+  margin-inline-start: 0.375rem;
+  padding: 0 0.375rem;
+  border-radius: 999px;
+  background-color: var(--surface-hi);
+  color: var(--fg-muted);
+  font-size: 0.6875rem;
+}
+
+.order-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.order-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.order-row__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 決定のボタンは, 長い一覧をスクロールしても手元に残す */
+.sticky-actions {
+  display: flex;
+  position: sticky;
+  bottom: 0;
+  flex-direction: column;
+  margin-top: 1.25rem;
+  padding-block: 0.75rem calc(0.75rem + env(safe-area-inset-bottom));
+  background-color: var(--bg);
+}
+
+.plan-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plan-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.375rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-pick {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.card-pick input {
+  margin-top: 0.3rem;
+}
+
+.card-pick__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.card-pick__term {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.card-pick__def {
+  color: var(--fg-muted);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.input--number {
+  width: 7rem;
+}
+
+.result-list {
+  margin: 0.75rem 0 1.25rem;
+  padding-inline-start: 1.25rem;
+}
