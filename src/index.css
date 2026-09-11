@@ -1347,3 +1347,241 @@ body {
   font-size: 0.875rem;
   text-align: center;
 }
+
+
+/* ---- 4択モード ( S6 ) ---- */
+
+.quiz__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-block: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.quiz__count strong {
+  font-size: 1.125rem;
+}
+
+.quiz__score {
+  color: var(--known);
+}
+
+.quiz__meter {
+  overflow: hidden;
+  height: 4px;
+  margin-bottom: 1rem;
+  border-radius: 999px;
+  background-color: var(--surface-hi);
+}
+
+.quiz__meter > span {
+  display: block;
+  height: 100%;
+  background-color: var(--accent);
+  transition: width 200ms ease-out;
+}
+
+.quiz__prompt {
+  padding: 1.25rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background-color: var(--surface);
+  text-align: center;
+}
+
+.quiz__side {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--fg-muted);
+  font-size: 0.75rem;
+}
+
+.quiz__text {
+  margin: 0;
+  font-size: 1.25rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.quiz__ask {
+  margin: 1rem 0 0.5rem;
+  color: var(--fg-muted);
+  font-size: 0.8125rem;
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 選択肢は定義文が入るため長くなる. 折り返しを許し, 指で押せる高さを確保する */
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.625rem 0.75rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--surface);
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.9375rem;
+  text-align: start;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease-out,
+    background-color 120ms ease-out,
+    opacity 120ms ease-out;
+}
+
+.choice:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.choice:disabled {
+  /* 判定後は押せないが, 文字は読める濃さのまま残す */
+  color: var(--fg);
+  cursor: default;
+}
+
+.choice__num {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background-color: var(--surface-hi);
+  color: var(--fg-muted);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.choice__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.choice__mark {
+  flex: 0 0 auto;
+}
+
+.choice--correct {
+  border-color: var(--known);
+  background-color: color-mix(in srgb, var(--known) 16%, var(--surface));
+}
+
+.choice--correct .choice__num {
+  background-color: var(--known);
+  color: #0b1a12;
+}
+
+.choice--correct .choice__mark {
+  color: var(--known);
+}
+
+.choice--wrong {
+  border-color: var(--danger);
+  background-color: color-mix(in srgb, var(--danger) 16%, var(--surface));
+}
+
+.choice--wrong .choice__num {
+  background-color: var(--danger);
+  color: #1f0b0b;
+}
+
+.choice--wrong .choice__mark {
+  color: var(--danger);
+}
+
+.choice--dim {
+  opacity: 0.5;
+}
+
+.quiz__pass {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.quiz__feedback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: var(--radius);
+  font-weight: 700;
+}
+
+.quiz__feedback--correct {
+  background-color: color-mix(in srgb, var(--known) 14%, transparent);
+  color: var(--known);
+}
+
+.quiz__feedback--wrong {
+  background-color: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
+}
+
+/* ---- 4択の結果 ---- */
+
+.wrong-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wrong-item {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.wrong-item__prompt {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.wrong-item__rows {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.wrong-item__rows dt {
+  color: var(--fg-muted);
+}
+
+.wrong-item__rows dd {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.wrong-item__answer {
+  color: var(--known);
+}
+
+.wrong-item__chosen {
+  color: var(--danger);
+}

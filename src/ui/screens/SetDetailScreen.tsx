@@ -1,16 +1,22 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import type { Card, Folder, ProgressSummary, StudyOptions } from '../../core/types'
+import type { Card, Folder, ProgressSummary, QuizOptions, StudyOptions } from '../../core/types'
 import { listFolders } from '../../core/db/folders'
 import { listCards, setStarred } from '../../core/db/cards'
-import { getProgressSummary, getSet, updateStudyOptions } from '../../core/db/sets'
+import {
+  getProgressSummary,
+  getSet,
+  updateQuizOptions,
+  updateStudyOptions,
+} from '../../core/db/sets'
 import { resetProgress } from '../../core/db/progress'
-import { normalizeStudyOptions } from '../../core/study/options'
+import { normalizeQuizOptions, normalizeStudyOptions } from '../../core/study/options'
 import { Breadcrumb } from '../components/Breadcrumb'
 import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
 import { ProgressBar } from '../components/ProgressBar'
+import { QuizOptionsForm } from '../components/QuizOptionsForm'
 import { StudyOptionsForm } from '../components/StudyOptionsForm'
 
 const EMPTY_SUMMARY: ProgressSummary = { total: 0, known: 0, learning: 0, unseen: 0 }
@@ -21,6 +27,7 @@ export function SetDetailScreen() {
   const navigate = useNavigate()
   const [starredOnly, setStarredOnly] = useState(false)
   const [studyOptions, setStudyOptions] = useState<StudyOptions | null>(null)
+  const [quizOptions, setQuizOptions] = useState<QuizOptions | null>(null)
   const [confirmingReset, setConfirmingReset] = useState(false)
 
   // 不在を null で返す. undefined のままだと「読み込み中」と区別できないため.
@@ -78,6 +85,17 @@ export function SetDetailScreen() {
           >
             <Icon name="play" />
             暗記モード
+          </button>
+          {/* 選択肢を作るにはカードが2枚以上要る ( specs.md §4.7.2 ) */}
+          <button
+            type="button"
+            className="btn btn--primary"
+            disabled={cards.length < 2}
+            title={cards.length < 2 ? 'カードが2枚以上必要です' : undefined}
+            onClick={() => setQuizOptions(normalizeQuizOptions(set.quizOptions))}
+          >
+            <Icon name="quiz" />
+            4択モード
           </button>
         </div>
       </header>
@@ -138,8 +156,6 @@ export function SetDetailScreen() {
         </ul>
       )}
 
-      <p className="note">4択モードは段階4で追加します.</p>
-
       <Modal
         open={confirmingReset}
         title="進捗をリセット"
@@ -189,6 +205,40 @@ export function SetDetailScreen() {
                   // 次回の既定値として記憶する ( specs.md §2.7 )
                   void updateStudyOptions(set.id, studyOptions).then(() =>
                     navigate(`/sets/${set.id}/study`),
+                  )
+                }}
+              >
+                開始
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        open={quizOptions !== null}
+        title="4択モードを開始"
+        onClose={() => setQuizOptions(null)}
+      >
+        {quizOptions !== null && (
+          <div className="form">
+            <QuizOptionsForm
+              value={quizOptions}
+              onChange={setQuizOptions}
+              starredCount={cards.filter((card) => card.starred).length}
+              learningCount={summary.learning}
+            />
+            <div className="form__actions">
+              <button type="button" className="btn" onClick={() => setQuizOptions(null)}>
+                キャンセル
+              </button>
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={() => {
+                  // 次回の既定値として記憶する ( specs.md §2.7 )
+                  void updateQuizOptions(set.id, quizOptions).then(() =>
+                    navigate(`/sets/${set.id}/quiz`),
                   )
                 }}
               >
