@@ -57,13 +57,13 @@ export function SetDetailScreen() {
         </div>
         <div className="screen__actions">
           {/* インポートへの導線はカード編集画面に集約している ( specs.md §4.3 ) */}
-          <Link className="btn" to={`/sets/${set.id}/settings`}>
-            <Icon name="settings" />
-            セット設定
-          </Link>
           <Link className="btn" to={`/sets/${set.id}/cards`}>
             <Icon name="edit" />
             カードを編集
+          </Link>
+          <Link className="btn" to={`/sets/${set.id}/settings`}>
+            <Icon name="settings" />
+            セット設定
           </Link>
           <button
             type="button"
@@ -77,21 +77,23 @@ export function SetDetailScreen() {
         </div>
       </header>
 
-      <ProgressBar summary={summary} />
-
-      <div className="toolbar">
-        {/* 「最初からやり直す」( specs.md §4.6.6 ) は結果画面にもあるが,
-            ラウンドの途中で戻したい場合のためにここからも辿れるようにする */}
-        <button
-          type="button"
-          className="btn btn--small"
-          disabled={summary.known + summary.learning === 0}
-          onClick={() => setConfirmingReset(true)}
-        >
-          <Icon name="refresh" size={15} />
-          進捗をリセット
-        </button>
-      </div>
+      {/* 上のセット情報と下のカード一覧を区切る. 進捗とそのリセットを1つの枠にまとめる */}
+      <section className="set-progress" aria-label="進捗">
+        <ProgressBar summary={summary} />
+        <div className="set-progress__actions">
+          {/* 「最初からやり直す」( specs.md §4.6.6 ) は結果画面にもあるが,
+              ラウンドの途中で戻したい場合のためにここからも辿れるようにする */}
+          <button
+            type="button"
+            className="btn btn--small"
+            disabled={summary.known + summary.learning === 0}
+            onClick={() => setConfirmingReset(true)}
+          >
+            <Icon name="refresh" size={15} />
+            進捗をリセット
+          </button>
+        </div>
+      </section>
 
       <div className="toolbar">
         <span className="toolbar__label">カード {cards.length} 枚</span>

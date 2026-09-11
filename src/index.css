@@ -65,7 +65,7 @@ body {
 }
 
 .screen__desc {
-  margin: 0.25rem 0 0;
+  margin: 0.375rem 0 0;
   color: var(--fg-muted);
   font-size: 0.9375rem;
   white-space: pre-wrap;
@@ -367,14 +367,15 @@ body {
 
 /* ---- 進捗サマリ ---- */
 
+/* 余白は外側の枠 ( .set-progress ) が受け持つ */
 .progress {
-  margin-block: 1rem;
+  margin: 0;
 }
 
 .progress__head {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.375rem;
+  margin-bottom: 0.5rem;
   font-size: 0.875rem;
 }
 
@@ -406,7 +407,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.875rem;
-  margin: 0.5rem 0 0;
+  margin: 0.625rem 0 0;
   padding: 0;
   list-style: none;
   color: var(--fg-muted);
@@ -431,6 +432,24 @@ body {
 
 .dot--unseen {
   background-color: var(--surface-hi);
+}
+
+/*
+ * セット詳細の進捗. 上のセット情報と下のカード一覧のあいだに挟まるため,
+ * 上下に余白を多めに取り, 枠で囲んで区切りをはっきりさせる.
+ */
+.set-progress {
+  margin-block: 1.5rem 1.75rem;
+  padding: 1rem 1rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--surface);
+}
+
+.set-progress__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
 }
 
 /* ---- ツールバー ---- */
