@@ -269,12 +269,12 @@ export function MergeScreen() {
                 key={id}
                 className={[
                   'order-row',
-                  dragIndex === index ? 'order-row--dragging' : '',
+                  dragIndex === index ? 'reorder--dragging' : '',
                   // 挿入先の目印。この行の上に入る
-                  insertIndex === index ? 'order-row--insert' : '',
+                  insertIndex === index ? 'reorder--insert-before' : '',
                   // 末尾に入る場合は最後の行の下に出す
                   insertIndex === selected.length && index === selected.length - 1
-                    ? 'order-row--insert-end'
+                    ? 'reorder--insert-after'
                     : '',
                 ]
                   .filter(Boolean)
@@ -292,7 +292,7 @@ export function MergeScreen() {
                 {/* つまみだけを掴めるようにして, 画面の縦スクロールと競合させない */}
                 <button
                   type="button"
-                  className="order-grip"
+                  className="reorder-grip"
                   aria-label={`${set.name} を掴んで並べ替え`}
                   title="ドラッグして並べ替え"
                   onPointerDown={(event) => startReorder(event, index)}
