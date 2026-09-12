@@ -4,7 +4,7 @@ on:
   # main への push で本番公開する.
   push:
     branches: [main]
-  # PR ではビルドのみ行う. マージ前に失敗を検知するため ( CLAUDE.md ブランチ運用 ).
+  # PR ではビルドのみ行う. マージ前に失敗を検知するため (CLAUDE.md ブランチ運用).
   pull_request:
   # Actions 画面から手動で再実行できるようにする.
   workflow_dispatch:
