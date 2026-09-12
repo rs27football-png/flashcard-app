@@ -11,19 +11,22 @@ interface ReorderState {
    * 要素数と同じ値のときは末尾に入ることを表す。
    */
   insertIndex: number | null
+  /** 指 ( またはマウス ) の位置。掴んでいるものを追従させるために使う */
+  x: number
+  y: number
 }
 
-const IDLE: ReorderState = { dragIndex: null, insertIndex: null }
+const IDLE: ReorderState = { dragIndex: null, insertIndex: null, x: 0, y: 0 }
 
 /**
- * 一覧をドラッグで並べ替える (specs.md §4.9.2)。
+ * 一覧をドラッグで並べ替える (specs.md §4.3, §4.9.2)。
  *
  * HTML5 のドラッグ&ドロップは iOS Safari のタッチで発火しないため使わず、
  * Pointer Events で組んでタッチとマウスを同一経路で扱う (specs.md §6.4)。
  * 掴む位置はつまみに限定し、画面の縦スクロールと競合させない。
  *
- * 動かしている最中は並びを変えず、挿入先だけを示す。落とすまで元の並びが残るため、
- * どこへ入るのかを元の並びと見比べて確かめられる。
+ * 掴んでいるあいだ一覧の並びは変えず、挿入先を線で示す。掴んだものは指に追従させて
+ * 別に描くため、元の並びと見比べながら落とす位置を決められる。
  */
 export function useReorderDrag(onMove: (from: number, to: number) => void) {
   const [state, setState] = useState<ReorderState>(IDLE)
@@ -44,7 +47,7 @@ export function useReorderDrag(onMove: (from: number, to: number) => void) {
     (event: React.PointerEvent, index: number) => {
       // つまみの上でのスクロールや文字選択を止める
       event.preventDefault()
-      update({ dragIndex: index, insertIndex: index })
+      update({ dragIndex: index, insertIndex: index, x: event.clientX, y: event.clientY })
     },
     [update],
   )
@@ -68,9 +71,9 @@ export function useReorderDrag(onMove: (from: number, to: number) => void) {
     const onPointerMove = (event: PointerEvent) => {
       const current = stateRef.current
       if (current.dragIndex === null) return
-      const insertIndex = resolveInsertIndex(event.clientX, event.clientY)
-      if (insertIndex === null || insertIndex === current.insertIndex) return
-      update({ ...current, insertIndex })
+      // 一覧の外へ出ても掴んだものは付いてくる。挿入先は最後に指した位置を保つ
+      const insertIndex = resolveInsertIndex(event.clientX, event.clientY) ?? current.insertIndex
+      update({ ...current, insertIndex, x: event.clientX, y: event.clientY })
     }
 
     const finish = () => {
@@ -94,5 +97,11 @@ export function useReorderDrag(onMove: (from: number, to: number) => void) {
     }
   }, [isDragging, update])
 
-  return { dragIndex: state.dragIndex, insertIndex: state.insertIndex, start }
+  return {
+    dragIndex: state.dragIndex,
+    insertIndex: state.insertIndex,
+    /** 掴んでいるものを描く位置 */
+    point: { x: state.x, y: state.y },
+    start,
+  }
 }

@@ -261,6 +261,13 @@ body {
   background-color: var(--surface);
 }
 
+.card-form__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
 .card-form__title {
   margin: 0;
   font-size: 1rem;
@@ -1915,8 +1922,7 @@ mark.hit {
 }
 
 .reorder--dragging {
-  border-radius: var(--radius);
-  background-color: color-mix(in srgb, var(--accent) 16%, transparent);
+  opacity: 0.4;
 }
 
 .order-row__name {
@@ -1997,7 +2003,7 @@ mark.hit {
 /* ---- セットの情報とカードの区切り ---- */
 
 .divider {
-  margin-block: 2.5rem 1.75rem;
+  margin-block: 2rem 0;
   border: none;
   border-top: 1px solid var(--border);
 }
@@ -2026,4 +2032,24 @@ mark.hit {
 .cards--editable .cards__definition,
 .cards--editable .cards__hint {
   grid-column: 3;
+}
+
+
+/* ---- 手応えの表示場所 ---- */
+
+/*
+ * 出入りで下の内容がずれないよう, 高さを常に確保しておく.
+ * セットの情報とカードの入力欄を隔てる余白も兼ねる.
+ */
+.notice-slot {
+  display: flex;
+  align-items: center;
+  /* 手応えの表示そのものと同じ高さ. 出入りで下がずれないようにする */
+  min-height: 2.5rem;
+  margin-block: 0.75rem;
+}
+
+.notice-slot .save-note {
+  width: 100%;
+  margin: 0;
 }

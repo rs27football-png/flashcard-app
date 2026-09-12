@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import type { Card, Folder, StudySet } from '../../core/types'
 import { listFolders } from '../../core/db/folders'
@@ -39,6 +39,12 @@ export function ImportScreen() {
   const [existingSetId, setExistingSetId] = useState(presetSetId ?? '')
   const [skipDuplicates, setSkipDuplicates] = useState(true)
   const [running, setRunning] = useState(false)
+
+  /** 直前の画面へ戻る. URL を直接開いたなど履歴がない場合はホームへ向かう */
+  const goBack = () => {
+    if (window.history.length > 1) navigate(-1)
+    else navigate('/')
+  }
   const [error, setError] = useState<string | null>(null)
 
   // 取り込み先が既存セットのときだけ, 重複判定のために現在のカードを読む
@@ -95,9 +101,9 @@ export function ImportScreen() {
       <header className="screen__head">
         <h1 className="screen__title">テキストから取り込み</h1>
         <div className="screen__actions">
-          <Link className="btn" to="/">
-            ホームへ戻る
-          </Link>
+          <button type="button" className="btn" onClick={goBack}>
+            戻る
+          </button>
         </div>
       </header>
 
