@@ -1881,7 +1881,7 @@ mark.hit {
 }
 
 /* 並べ替えのつまみ. ここだけスクロールを止め, 行のドラッグと両立させる */
-.order-grip {
+.reorder-grip {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
@@ -1895,26 +1895,26 @@ mark.hit {
   touch-action: none;
 }
 
-.order-grip:active {
+.reorder-grip:active {
   cursor: grabbing;
 }
 
 /* 挿入先の目印. 落とすとこの線の位置に入る */
-.order-row--insert {
+.reorder--insert-before {
   box-shadow: inset 0 3px 0 var(--accent);
 }
 
-.order-row--insert-end {
+.reorder--insert-after {
   box-shadow: inset 0 -3px 0 var(--accent);
 }
 
-.order-row--insert.order-row--insert-end {
+.reorder--insert-before.reorder--insert-after {
   box-shadow:
     inset 0 3px 0 var(--accent),
     inset 0 -3px 0 var(--accent);
 }
 
-.order-row--dragging {
+.reorder--dragging {
   border-radius: var(--radius);
   background-color: color-mix(in srgb, var(--accent) 16%, transparent);
 }
@@ -1991,4 +1991,39 @@ mark.hit {
   margin: 0.75rem 0 1.25rem;
   padding-inline-start: 0;
   list-style: none;
+}
+
+
+/* ---- セットの情報とカードの区切り ---- */
+
+.divider {
+  margin-block: 2.5rem 1.75rem;
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+/* ---- 並べ替えできるカード一覧 ---- */
+
+/* つまみのぶんの桁を足す. 表示だけの一覧 (.cards) は2桁のまま */
+.cards--editable .cards__item {
+  grid-template-columns: 1.75rem 2.25rem minmax(0, 1fr);
+  border-radius: var(--radius);
+}
+
+.cards--editable .reorder-grip {
+  grid-column: 1;
+  grid-row: 1;
+  width: 1.75rem;
+  min-height: 2rem;
+  align-self: start;
+}
+
+.cards--editable .star {
+  grid-column: 2;
+}
+
+.cards--editable .cards__term,
+.cards--editable .cards__definition,
+.cards--editable .cards__hint {
+  grid-column: 3;
 }

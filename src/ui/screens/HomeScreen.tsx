@@ -220,6 +220,7 @@ export function HomeScreen() {
               className="menu__item"
               onClick={() => setDialog({ type: 'createSet', folderId: dialog.folder.id })}
             >
+              <Icon name="set-plus" />
               このフォルダに学習セットを追加
             </button>
             <button
@@ -227,6 +228,7 @@ export function HomeScreen() {
               className="menu__item"
               onClick={() => setDialog({ type: 'createFolder', parentId: dialog.folder.id })}
             >
+              <Icon name="folder-plus" />
               このフォルダに下位フォルダを追加
             </button>
             <button
@@ -234,6 +236,7 @@ export function HomeScreen() {
               className="menu__item"
               onClick={() => setDialog({ type: 'renameFolder', folder: dialog.folder })}
             >
+              <Icon name="edit" />
               名前を変更
             </button>
             <button
@@ -241,6 +244,7 @@ export function HomeScreen() {
               className="menu__item"
               onClick={() => setDialog({ type: 'moveFolder', folder: dialog.folder })}
             >
+              <Icon name="folder" />
               別のフォルダへ移動
             </button>
             <button
@@ -248,6 +252,7 @@ export function HomeScreen() {
               className="menu__item"
               onClick={() => void handleCopyFolder(dialog.folder)}
             >
+              <Icon name="copy" />
               フォルダをコピー (中身ごと)
             </button>
             <button
@@ -255,6 +260,7 @@ export function HomeScreen() {
               className="menu__item menu__item--danger"
               onClick={() => void openDeleteFolder(dialog.folder)}
             >
+              <Icon name="trash" />
               削除
             </button>
           </div>

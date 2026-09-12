@@ -7,7 +7,7 @@ import {
   createCard,
   deleteCard,
   listCards,
-  moveCard,
+  reorderCards,
   setStarred,
   sortCards,
   updateCard,
@@ -17,6 +17,7 @@ import { getSet, updateSetInfo } from '../../core/db/sets'
 import { Breadcrumb } from '../components/Breadcrumb'
 import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
+import { ORDER_ATTRIBUTE, useReorderDrag } from '../hooks/useReorderDrag'
 
 const EMPTY_INPUT: CardInput = { term: '', definition: '', hint: '' }
 
@@ -71,7 +72,19 @@ export function CardEditScreen() {
   )
 
   /** @returns 実際に書き込んだかどうか */
-  const submit = async (): Promise<boolean> => {
+  /** ドラッグで動かした結果を order に書き戻す (specs.md §4.3) */
+  const moveCardTo = (from: number, to: number) => {
+    const next = [...cards]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    void reorderCards(
+      setId,
+      next.map((card) => card.id),
+    )
+  }
+  const { dragIndex, insertIndex, start: startReorder } = useReorderDrag(moveCardTo)
+
+  const submit = async (): Promise<'added' | 'updated' | 'none'> => {
     // 変換が確定していないうちに保存すると, 未確定の文字列が欄に残る.
     // いったんフォーカスを外して確定させ, その入力が state に届くのを1周期待つ.
     if (composingRef.current) {
@@ -79,21 +92,34 @@ export function CardEditScreen() {
       await new Promise((resolve) => setTimeout(resolve, 0))
     }
     const values = inputRef.current
-    if (values.term.trim() === '' && values.definition.trim() === '') return false
+    if (values.term.trim() === '' && values.definition.trim() === '') return 'none'
     try {
       if (editingId === null) {
         await createCard(setId, values)
       } else {
         await updateCard(editingId, values)
       }
+      const result = editingId === null ? 'added' : 'updated'
       resetForm()
       // 連続追加を想定し, 保存後は入力欄をクリアして同じ画面に留まる (specs.md §4.3)
       termRef.current?.focus()
-      return true
+      return result
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '保存に失敗しました。')
-      return false
+      return 'none'
     }
+  }
+
+  /**
+   * 追加・更新の結果を手応えとして返す。
+   * 何枚目が増えたのかを示し、追加できたことを見て分かるようにする。
+   */
+  const handleSubmit = async () => {
+    // cards はこの描画時点の一覧。書き込み前の枚数に1を足したものが追加後の枚数になる
+    const addedNumber = cards.length + 1
+    const result = await submit()
+    if (result === 'added') notify(`${addedNumber}枚目のカードを追加しました`)
+    else if (result === 'updated') notify('カードを更新しました')
   }
 
   /**
@@ -146,9 +172,12 @@ export function CardEditScreen() {
   }
 
   const saveNow = async () => {
-    const wroteCard = await submit()
+    const addedNumber = cards.length + 1
+    const result = await submit()
     const wroteInfo = await saveInfo()
-    notify(wroteCard || wroteInfo ? '保存しました' : 'すべて保存済みです')
+    if (result === 'added') notify(`${addedNumber}枚目のカードを追加しました`)
+    else if (result === 'updated') notify('カードを更新しました')
+    else notify(wroteInfo ? '保存しました' : 'すべて保存済みです')
   }
 
   /** 変換の開始と終了を拾う. どの入力欄でも同じ扱いでよいので form でまとめて受ける */
@@ -258,12 +287,15 @@ export function CardEditScreen() {
         </div>
       </section>
 
+      {/* セットの情報とカードの編集を見た目で分ける */}
+      <hr className="divider" />
+
       <form
         className="form card-form"
         {...compositionHandlers}
         onSubmit={(event) => {
           event.preventDefault()
-          void submit()
+          void handleSubmit()
         }}
         // Ctrl + Enter で保存する (specs.md §5.3). textarea 内でも効くよう form 側で拾う.
         // 変換確定の Enter を拾わないよう, 変換中は無視する.
@@ -271,7 +303,7 @@ export function CardEditScreen() {
           if (composingRef.current) return
           if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
             event.preventDefault()
-            void submit()
+            void handleSubmit()
           }
         }}
       >
@@ -358,8 +390,31 @@ export function CardEditScreen() {
           {cards.map((card, index) => (
             <li
               key={card.id}
-              className={`cards__item ${editingId === card.id ? 'cards__item--editing' : ''}`}
+              {...{ [ORDER_ATTRIBUTE]: index }}
+              className={[
+                'cards__item',
+                editingId === card.id ? 'cards__item--editing' : '',
+                dragIndex === index ? 'reorder--dragging' : '',
+                // 挿入先の目印。この行の上に入る
+                insertIndex === index ? 'reorder--insert-before' : '',
+                // 末尾に入る場合は最後の行の下に出す
+                insertIndex === cards.length && index === cards.length - 1
+                  ? 'reorder--insert-after'
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
             >
+              {/* つまみだけを掴めるようにして, 一覧の縦スクロールと競合させない */}
+              <button
+                type="button"
+                className="reorder-grip"
+                aria-label={`${card.term} を掴んで並べ替え`}
+                title="ドラッグして並べ替え"
+                onPointerDown={(event) => startReorder(event, index)}
+              >
+                <Icon name="grip" size={16} />
+              </button>
               <button
                 type="button"
                 className={`star ${card.starred ? 'star--on' : ''}`}
@@ -373,24 +428,6 @@ export function CardEditScreen() {
               <div className="cards__definition">{card.definition}</div>
               {card.hint !== '' && <div className="cards__hint">ヒント: {card.hint}</div>}
               <div className="cards__tools">
-                <button
-                  type="button"
-                  className="btn btn--icon"
-                  aria-label="上へ移動"
-                  disabled={index === 0}
-                  onClick={() => void moveCard(card.id, -1)}
-                >
-                  <Icon name="arrow-up" size={17} />
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--icon"
-                  aria-label="下へ移動"
-                  disabled={index === cards.length - 1}
-                  onClick={() => void moveCard(card.id, 1)}
-                >
-                  <Icon name="arrow-down" size={17} />
-                </button>
                 <button type="button" className="btn btn--small" onClick={() => startEdit(card)}>
                   <Icon name="edit" size={15} />
                   編集

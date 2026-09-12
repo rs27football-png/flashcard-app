@@ -119,21 +119,21 @@ export async function setStarred(id: string, starred: boolean): Promise<void> {
 }
 
 /**
- * カードを1つ隣と入れ替える (direction: -1 で上, 1 で下).
+ * カードの並びをまとめて指定する。ドラッグでの並べ替えに用いる (specs.md §4.3)。
  *
- * 全件の order を振り直すのではなく2件の order を交換するだけにしてある.
- * カードが1万枚あるセットでも書き込みが2件で済むようにするため.
+ * 渡された順に order を振り直す。指定から漏れたカードは末尾へ回し、
+ * 並べ替えの最中にカードが増えていても取りこぼさないようにする。
  */
-export async function moveCard(id: string, direction: -1 | 1): Promise<void> {
+export async function reorderCards(setId: string, cardIds: readonly string[]): Promise<void> {
   await db.transaction('rw', db.cards, async () => {
-    const card = await db.cards.get(id)
-    if (!card) return
-    const cards = await listCards(card.setId)
-    const index = cards.findIndex((item) => item.id === id)
-    const target = cards[index + direction]
-    if (!target) return // 端にいるので何もしない
-    await db.cards.update(card.id, { order: target.order })
-    await db.cards.update(target.id, { order: card.order })
+    const cards = await listCards(setId)
+    const byId = new Map(cards.map((card) => [card.id, card]))
+    const wanted = new Set(cardIds)
+    const ordered = cardIds
+      .map((id) => byId.get(id))
+      .filter((card): card is Card => card !== undefined)
+    const rest = cards.filter((card) => !wanted.has(card.id))
+    await db.cards.bulkPut([...ordered, ...rest].map((card, index) => ({ ...card, order: index })))
   })
 }
 
