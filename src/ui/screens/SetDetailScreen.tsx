@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import type { Card, Folder, ProgressSummary, QuizOptions, StudyOptions } from '../../core/types'
 import { listFolders } from '../../core/db/folders'
@@ -13,10 +13,12 @@ import {
 import { resetProgress } from '../../core/db/progress'
 import { normalizeQuizOptions, normalizeStudyOptions } from '../../core/study/options'
 import { Breadcrumb } from '../components/Breadcrumb'
+import { CopySetDialog } from '../components/CopySetDialog'
 import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
 import { ProgressBar } from '../components/ProgressBar'
 import { QuizOptionsForm } from '../components/QuizOptionsForm'
+import { SetActionsSheet } from '../components/SetActionsSheet'
 import { StudyOptionsForm } from '../components/StudyOptionsForm'
 
 const EMPTY_SUMMARY: ProgressSummary = { total: 0, known: 0, learning: 0, unseen: 0 }
@@ -29,12 +31,36 @@ export function SetDetailScreen() {
   const [studyOptions, setStudyOptions] = useState<StudyOptions | null>(null)
   const [quizOptions, setQuizOptions] = useState<QuizOptions | null>(null)
   const [confirmingReset, setConfirmingReset] = useState(false)
+  const [showActions, setShowActions] = useState(false)
+  const [copying, setCopying] = useState(false)
 
   // 不在を null で返す. undefined のままだと「読み込み中」と区別できないため.
   const set = useLiveQuery(async () => (await getSet(setId)) ?? null, [setId])
   const folders = useLiveQuery(() => listFolders(), [], [] as Folder[])
   const cards = useLiveQuery(() => listCards(setId), [setId], [] as Card[])
   const summary = useLiveQuery(() => getProgressSummary(setId), [setId], EMPTY_SUMMARY)
+
+  // 検索結果から来たときは, 該当のカードまで送って一時的に強調する ( specs.md §4.10 )
+  const [searchParams] = useSearchParams()
+  const focusCardId = searchParams.get('card')
+  // 送るのは来たときの1回だけ. ★の切り替えなどで一覧が更新されるたびに引き戻さない
+  const handledFocusRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (focusCardId === null || handledFocusRef.current === focusCardId) return
+    const element = document.getElementById(`card-${focusCardId}`)
+    if (element === null) return
+    handledFocusRef.current = focusCardId
+    element.scrollIntoView({ block: 'center' })
+    // 強調は画面上の一時的な演出なので state を持たず, 要素に直接クラスを付け外しする.
+    // この行の className は React 側で変わらないため, 再描画で打ち消されることはない
+    element.classList.add('cards__item--flash')
+    const clear = () => element.classList.remove('cards__item--flash')
+    element.addEventListener('animationend', clear, { once: true })
+    return () => {
+      element.removeEventListener('animationend', clear)
+      clear()
+    }
+  }, [focusCardId, cards])
 
   // useLiveQuery は初回に undefined を返す.
   if (set === undefined) {
@@ -89,6 +115,16 @@ export function SetDetailScreen() {
           >
             <Icon name="settings" size={19} />
           </Link>
+          {/* コピー・統合・分割 ( specs.md §4.9 ) */}
+          <button
+            type="button"
+            className="btn btn--tool"
+            aria-label="セットの操作"
+            title="セットの操作"
+            onClick={() => setShowActions(true)}
+          >
+            <Icon name="more" size={19} />
+          </button>
         </div>
       </header>
 
@@ -154,7 +190,7 @@ export function SetDetailScreen() {
       ) : (
         <ul className="cards">
           {visibleCards.map((card) => (
-            <li key={card.id} className="cards__item">
+            <li key={card.id} id={`card-${card.id}`} className="cards__item">
               <button
                 type="button"
                 className={`star ${card.starred ? 'star--on' : ''}`}
@@ -263,6 +299,27 @@ export function SetDetailScreen() {
           </div>
         )}
       </Modal>
+
+      {showActions && (
+        <SetActionsSheet
+          set={set}
+          onClose={() => setShowActions(false)}
+          onCopy={() => setCopying(true)}
+        />
+      )}
+
+      {copying && (
+        <CopySetDialog
+          set={set}
+          folders={folders}
+          onClose={() => setCopying(false)}
+          onCopied={(newSetId) => {
+            setCopying(false)
+            // 詳細からのコピーは, 作ったセットを開いて手を入れやすくする
+            navigate(`/sets/${newSetId}`)
+          }}
+        />
+      )}
     </div>
   )
 }

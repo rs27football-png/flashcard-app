@@ -198,3 +198,11 @@ export async function createCards(
   })
   return cards.length
 }
+
+/**
+ * 全カードを読み出す. 横断検索は画面を開いている間これを手元に持ち,
+ * 入力のたびに IndexedDB を読み直さずに照合する ( specs.md §6.3 ).
+ */
+export function listAllCards(): Promise<Card[]> {
+  return db.cards.toArray()
+}

@@ -33,6 +33,10 @@ export type IconName =
   | 'more'
   | 'home'
   | 'quiz'
+  | 'search'
+  | 'copy'
+  | 'merge'
+  | 'split'
 
 /** 塗りではなく線で描くため, すべて d 属性のみで表せる */
 const PATHS: Record<IconName, string> = {
@@ -65,6 +69,10 @@ const PATHS: Record<IconName, string> = {
   more: 'M12 12h.01 M19 12h.01 M5 12h.01',
   home: 'M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z M9 21v-7h6v7',
   quiz: 'M10 6h10 M10 12h10 M10 18h10 M3.5 6l1.5 1.5L7.5 5 M3.5 12l1.5 1.5L7.5 11 M3.5 18l1.5 1.5L7.5 17',
+  search: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z M21 21l-4.35-4.35',
+  copy: 'M11 9h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1',
+  merge: 'M5 4l7 7 M19 4l-7 7 M12 11v10 M8 17l4 4 4-4',
+  split: 'M12 3v9 M12 12l-7 7 M12 12l7 7 M5 14v5h5 M19 14v5h-5',
 }
 
 /** 点で表すアイコンは線端を丸めた極短線として描くため, 単独で塗りを持たせる */
