@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import type { Card, QuizOptions, StudySet } from '../../core/types'
+import type { Asset, Card, QuizOptions, StudySet } from '../../core/types'
+import { listAssets } from '../../core/db/assets'
 import { listCards } from '../../core/db/cards'
 import { getSet } from '../../core/db/sets'
 import { loadProgressMap, recordQuizAnswer } from '../../core/db/progress'
@@ -13,6 +14,9 @@ import {
   type QuizQuestion,
 } from '../../core/study/quiz'
 import { Icon } from '../components/Icon'
+import { ImageViewer } from '../components/ImageViewer'
+import { RichText } from '../components/RichText'
+import { useAssetUrls } from '../hooks/useAssetUrls'
 
 type Phase =
   | { kind: 'loading' }
@@ -51,6 +55,9 @@ export function QuizScreen() {
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
   const [set, setSet] = useState<StudySet | null>(null)
   const [cards, setCards] = useState<Card[]>([])
+  const [assets, setAssets] = useState<Asset[]>([])
+  /** 全画面で見せている画像. null なら閉じている */
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null)
   const [options, setOptions] = useState<QuizOptions | null>(null)
   /** 4択の結果を進捗に反映するか (specs.md §2.8). 設定画面ができるまでは既定値 */
   const [affectsProgress, setAffectsProgress] = useState(true)
@@ -93,6 +100,7 @@ export function QuizScreen() {
     const load = async () => {
       const loadedSet = await getSet(setId)
       const loadedCards = await listCards(setId)
+      const loadedAssets = await listAssets(setId)
       const settings = await getAppSettings()
       if (cancelled) return
       if (loadedSet === undefined) {
@@ -102,6 +110,7 @@ export function QuizScreen() {
       const quizOptions = normalizeQuizOptions(loadedSet.quizOptions)
       setSet(loadedSet)
       setCards(loadedCards)
+      setAssets(loadedAssets)
       setOptions(quizOptions)
       setAffectsProgress(settings.quizAffectsProgress)
       await build(loadedCards, quizOptions)
@@ -112,6 +121,7 @@ export function QuizScreen() {
     }
   }, [setId, build])
 
+  const assetUrls = useAssetUrls(assets)
   const question = questions[index] ?? null
   const answered = selected !== null
 
@@ -267,7 +277,24 @@ export function QuizScreen() {
         <>
           <section className="quiz__prompt">
             <span className="quiz__side">{promptSide}</span>
-            <p className="quiz__text">{question.prompt}</p>
+            {set?.enableImages === true && question.promptImageId !== null && (
+              <img
+                className="quiz__image"
+                src={assetUrls.get(question.promptImageId)}
+                alt="問題文の画像"
+                // 図の細部が読めないと答えようがないため, 叩いたら拡大できるようにする
+                onClick={() => {
+                  const url =
+                    question.promptImageId === null
+                      ? undefined
+                      : assetUrls.get(question.promptImageId)
+                  if (url !== undefined) setViewerUrl(url)
+                }}
+              />
+            )}
+            <p className="quiz__text">
+              <RichText text={question.prompt} math={set?.enableMath ?? false} />
+            </p>
           </section>
           <p className="quiz__ask">{answerSide}を選んでください</p>
 
@@ -290,7 +317,16 @@ export function QuizScreen() {
                     onClick={() => choose(choiceIndex)}
                   >
                     <span className="choice__num">{choiceIndex + 1}</span>
-                    <span className="choice__text">{choice.text}</span>
+                    {set?.enableImages === true && choice.imageId !== null && (
+                      <img
+                        className="choice__thumb"
+                        src={assetUrls.get(choice.imageId)}
+                        alt=""
+                      />
+                    )}
+                    <span className="choice__text">
+                      <RichText text={choice.text} math={set?.enableMath ?? false} />
+                    </span>
                     {answered && choice.correct && (
                       <Icon name="check" size={18} className="choice__mark" />
                     )}
@@ -324,6 +360,10 @@ export function QuizScreen() {
             </div>
           )}
         </>
+      )}
+
+      {viewerUrl !== null && (
+        <ImageViewer src={viewerUrl} alt="問題文の画像" onClose={() => setViewerUrl(null)} />
       )}
 
       <p className="hint study__keys">
@@ -376,12 +416,22 @@ function QuizResult({ set, answers, durationMs, onRetryWrong, onRepeat }: QuizRe
           <ul className="wrong-list">
             {wrong.map((record, recordIndex) => (
               <li key={recordIndex} className="wrong-item">
-                <p className="wrong-item__prompt">{record.question.prompt}</p>
+                <p className="wrong-item__prompt">
+                  <RichText text={record.question.prompt} math={set.enableMath} />
+                </p>
                 <dl className="wrong-item__rows">
                   <dt>正答</dt>
-                  <dd className="wrong-item__answer">{record.question.answer}</dd>
+                  <dd className="wrong-item__answer">
+                    <RichText text={record.question.answer} math={set.enableMath} />
+                  </dd>
                   <dt>選んだ解答</dt>
-                  <dd className="wrong-item__chosen">{record.chosen ?? 'パス'}</dd>
+                  <dd className="wrong-item__chosen">
+                    {record.chosen === null ? (
+                      'パス'
+                    ) : (
+                      <RichText text={record.chosen} math={set.enableMath} />
+                    )}
+                  </dd>
                 </dl>
               </li>
             ))}

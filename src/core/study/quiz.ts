@@ -8,12 +8,16 @@ export const MAX_CHOICES = 4
 export interface QuizChoice {
   text: string
   correct: boolean
+  /** その文言を持つカードに添えられていた画像 (specs.md §4.4.2). 画像が無効なセットでは表示しない */
+  imageId: string | null
 }
 
 export interface QuizQuestion {
   cardId: string
   /** 問題文 (front で指定した側) */
   prompt: string
+  /** 問題文側の画像 */
+  promptImageId: string | null
   /** 正答 (反対側) */
   answer: string
   /** 表示順に並べた選択肢. 2〜4個 */
@@ -36,6 +40,10 @@ type Side = QuizOptions['front']
 
 const oppositeOf = (side: Side): Side => (side === 'term' ? 'definition' : 'term')
 
+/** その面の画像を指す項目名. 表なら termImageId, 裏なら definitionImageId */
+const imageKeyOf = (side: Side): 'termImageId' | 'definitionImageId' =>
+  side === 'term' ? 'termImageId' : 'definitionImageId'
+
 const byOrder = (a: Card, b: Card) => a.order - b.order || a.createdAt - b.createdAt
 
 /**
@@ -49,6 +57,25 @@ function collectAnswerTexts(setCards: readonly Card[], answerSide: Side): string
     if (text !== '') texts.add(text)
   }
   return [...texts]
+}
+
+/**
+ * 答えの文言から画像を引けるようにする (specs.md §4.4.2).
+ * 誤答は文言だけを集めて作るため, 選択肢に画像を添えるにはこの対応表が要る.
+ * 同じ文言のカードが複数あるときは最初の1枚を採る.
+ */
+function collectAnswerImages(
+  setCards: readonly Card[],
+  answerSide: Side,
+): Map<string, string> {
+  const key = imageKeyOf(answerSide)
+  const images = new Map<string, string>()
+  for (const card of setCards) {
+    const text = card[answerSide]
+    const imageId = card[key]
+    if (text !== '' && imageId !== null && !images.has(text)) images.set(text, imageId)
+  }
+  return images
 }
 
 /**
@@ -84,6 +111,7 @@ export function buildQuestion(
   card: Card,
   answerTexts: readonly string[],
   front: Side,
+  answerImages: ReadonlyMap<string, string> = new Map(),
 ): QuizQuestion | null {
   const prompt = card[front]
   const answer = card[oppositeOf(front)]
@@ -95,14 +123,25 @@ export function buildQuestion(
 
   // 選択肢は毎回混ぜ, 正答の位置に偏りを出さない
   const choices = shuffle([
-    { text: answer, correct: true },
-    ...distractors.map((text) => ({ text, correct: false })),
+    { text: answer, correct: true, imageId: card[imageKeyOf(oppositeOf(front))] },
+    ...distractors.map((text) => ({
+      text,
+      correct: false,
+      imageId: answerImages.get(text) ?? null,
+    })),
   ])
-  return { cardId: card.id, prompt, answer, choices }
+  return {
+    cardId: card.id,
+    prompt,
+    promptImageId: card[imageKeyOf(front)],
+    answer,
+    choices,
+  }
 }
 
 function makeQuestions(targets: readonly Card[], setCards: readonly Card[], front: Side) {
   const answerTexts = collectAnswerTexts(setCards, oppositeOf(front))
+  const answerImages = collectAnswerImages(setCards, oppositeOf(front))
   const questions: QuizQuestion[] = []
   let skippedEmpty = 0
   let skippedNoDistractor = 0
@@ -111,7 +150,7 @@ function makeQuestions(targets: readonly Card[], setCards: readonly Card[], fron
       skippedEmpty += 1
       continue
     }
-    const question = buildQuestion(card, answerTexts, front)
+    const question = buildQuestion(card, answerTexts, front, answerImages)
     if (question === null) skippedNoDistractor += 1
     else questions.push(question)
   }

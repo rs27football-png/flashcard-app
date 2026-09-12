@@ -2053,3 +2053,216 @@ mark.hit {
   width: 100%;
   margin: 0;
 }
+
+
+/* ==== リッチコンテンツ (specs.md §4.4) ==== */
+
+/* ---- 数式 ---- */
+
+/*
+ * KaTeX の出力を本文の行に馴染ませる. ブロック数式だけは行を分けて中央に置く.
+ * 横に長い式は途中で切らず, その式だけを横スクロールさせる.
+ */
+.math {
+  display: inline-block;
+  max-width: 100%;
+  overflow-x: auto;
+  vertical-align: middle;
+}
+
+.math--block {
+  display: block;
+  margin-block: 0.5rem;
+  text-align: center;
+}
+
+.math-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.math-preview {
+  margin-top: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background-color: var(--surface);
+}
+
+.math-preview__row {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.math-preview__row + .math-preview__row {
+  margin-top: 0.375rem;
+  color: var(--fg-muted);
+  font-size: 0.9375rem;
+}
+
+.math-preview__row--hint {
+  color: var(--fg-muted);
+  font-size: 0.875rem;
+}
+
+/* ---- 画像の入力欄 (specs.md §4.4.2) ---- */
+
+/* 選択肢を隠したまま label から呼べるようにする. display: none だと支援技術から消える */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.image-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.625rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background-color: var(--surface);
+}
+
+.image-field:focus-visible,
+.image-field--over {
+  border-color: var(--accent);
+  border-style: solid;
+  outline: none;
+}
+
+.image-field__preview {
+  align-self: start;
+  max-width: 100%;
+  /* 編集画面では全体の形が分かれば足りる. 画面が縦に伸びすぎないよう頭を抑える */
+  max-height: 12rem;
+  border-radius: var(--radius);
+}
+
+.image-field__empty {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  margin: 0;
+  color: var(--fg-muted);
+  font-size: 0.9375rem;
+}
+
+.image-field__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.image-field__size {
+  margin: 0;
+}
+
+/* ---- 一覧のサムネイル ---- */
+
+.cards__thumb {
+  height: 2rem;
+  margin-inline-end: 0.5rem;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+/* ---- 暗記モードの画像 (specs.md §4.4.2) ---- */
+
+.study__image {
+  display: block;
+  max-width: 100%;
+  /* 画面の半分までとし, 文字を追い出さない */
+  max-height: 50svh;
+  margin: 0 auto 0.75rem;
+  border-radius: var(--radius);
+  cursor: zoom-in;
+}
+
+/* ---- 4択モードの画像 ---- */
+
+.quiz__image {
+  display: block;
+  max-width: 100%;
+  max-height: 200px;
+  margin: 0.5rem auto;
+  border-radius: var(--radius);
+  cursor: zoom-in;
+}
+
+.choice__thumb {
+  flex: 0 0 auto;
+  max-width: 40%;
+  max-height: 80px;
+  border-radius: 4px;
+}
+
+/* ---- 画像の全画面表示 ---- */
+
+.image-viewer {
+  display: flex;
+  position: fixed;
+  z-index: 50;
+  align-items: center;
+  justify-content: center;
+  inset: 0;
+  background-color: rgb(0 0 0 / 92%);
+  /* ピンチをブラウザの拡大に取られないよう, 操作を自前で受ける */
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+
+.image-viewer__bar {
+  display: flex;
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: max(0.5rem, env(safe-area-inset-top)) 0.75rem 0.5rem;
+}
+
+.image-viewer__scale {
+  color: var(--fg-muted);
+  font-size: 0.8125rem;
+}
+
+.image-viewer__image {
+  max-width: 100%;
+  max-height: 100%;
+  transform-origin: center;
+  user-select: none;
+}
+
+.image-viewer__hint {
+  position: absolute;
+  bottom: max(0.75rem, env(safe-area-inset-bottom));
+  margin: 0;
+  color: var(--fg-muted);
+  font-size: 0.75rem;
+}
+
+/* ---- セット設定 (S10) ---- */
+
+.usage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.usage__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--fg-muted);
+  font-size: 0.9375rem;
+}

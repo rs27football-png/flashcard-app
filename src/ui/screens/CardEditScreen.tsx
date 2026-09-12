@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import type { Card, Folder } from '../../core/types'
+import type { Asset, Card, Folder } from '../../core/types'
 import { listFolders } from '../../core/db/folders'
+import { listAssets } from '../../core/db/assets'
 import {
   createCard,
   deleteCard,
@@ -12,15 +13,32 @@ import {
   sortCards,
   updateCard,
   type CardInput,
+  type ImageEdit,
 } from '../../core/db/cards'
 import { getSet, updateSetInfo } from '../../core/db/sets'
+import { DEFAULT_APP_SETTINGS, getAppSettings } from '../../core/db/settings'
+import { compressImage, isImageFile } from '../../core/media/compress'
 import { Breadcrumb } from '../components/Breadcrumb'
 import { Icon } from '../components/Icon'
+import { ImageField } from '../components/ImageField'
+import { MathPalette } from '../components/MathPalette'
 import { Modal } from '../components/Modal'
+import { RichText } from '../components/RichText'
+import { useAssetUrls } from '../hooks/useAssetUrls'
 import { useGoBack } from '../hooks/useGoBack'
 import { ORDER_ATTRIBUTE, useReorderDrag } from '../hooks/useReorderDrag'
 
-const EMPTY_INPUT: CardInput = { term: '', definition: '', hint: '' }
+const KEEP: ImageEdit = { kind: 'keep' }
+const EMPTY_INPUT: CardInput = {
+  term: '',
+  definition: '',
+  hint: '',
+  termImage: KEEP,
+  definitionImage: KEEP,
+}
+
+/** 数式の入力補助を差し込める欄 */
+type TextField = 'term' | 'definition' | 'hint'
 
 /** S3 カード編集. 追加 / 更新 / 削除 / 並べ替え (specs.md §3, §4.3) */
 export function CardEditScreen() {
@@ -29,6 +47,11 @@ export function CardEditScreen() {
   const set = useLiveQuery(async () => (await getSet(setId)) ?? null, [setId])
   const folders = useLiveQuery(() => listFolders(), [], [] as Folder[])
   const cards = useLiveQuery(() => listCards(setId), [setId], [] as Card[])
+  // 画像は行ごとに読まず, セット単位で1回だけ読んで ID から引く (specs.md §6.3)
+  const assets = useLiveQuery(() => listAssets(setId), [setId], [] as Asset[])
+  const assetUrls = useAssetUrls(assets)
+  const assetById = new Map(assets.map((asset) => [asset.id, asset]))
+  const settings = useLiveQuery(() => getAppSettings(), [], DEFAULT_APP_SETTINGS)
 
   const [input, setInput] = useState<CardInput>(EMPTY_INPUT)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -43,6 +66,10 @@ export function CardEditScreen() {
   const [infoDraft, setInfoDraft] = useState<{ name: string; description: string } | null>(null)
   const noticeTimerRef = useRef<number | null>(null)
   const termRef = useRef<HTMLTextAreaElement>(null)
+  const definitionRef = useRef<HTMLTextAreaElement>(null)
+  const hintRef = useRef<HTMLInputElement>(null)
+  /** 最後に触っていた欄. 数式の挿入先と, 貼り付けた画像を付ける面を決めるのに使う */
+  const [activeField, setActiveField] = useState<TextField>('term')
   // 保存時に読むのは常に最新の入力値でなければならない. 日本語入力の確定を待つあいだに
   // 状態が変わるため, 描画時に閉じ込めた値ではなく ref 経由で参照する.
   // 書き換えは入力を受けた時点で行い, 描画中には触らない.
@@ -50,7 +77,15 @@ export function CardEditScreen() {
   /** 日本語入力の変換中かどうか. 未確定のまま保存すると欄に文字が残る */
   const composingRef = useRef(false)
 
-  const isBlank = input.term.trim() === '' && input.definition.trim() === ''
+  /** 画像だけのカードも作れるため, 画像が付いていれば空欄でも保存できる (specs.md §2.3) */
+  const editingCard = editingId === null ? null : (cards.find((card) => card.id === editingId) ?? null)
+  const hasImage = (edit: ImageEdit | undefined, current: string | null | undefined) =>
+    edit === undefined || edit.kind === 'keep' ? (current ?? null) !== null : edit.kind === 'set'
+  const isBlank =
+    input.term.trim() === '' &&
+    input.definition.trim() === '' &&
+    !hasImage(input.termImage, editingCard?.termImageId) &&
+    !hasImage(input.definitionImage, editingCard?.definitionImageId)
 
   /** 入力値の更新はここに一本化し, state と ref を同時に進める */
   const updateInput = (patch: Partial<CardInput>) => {
@@ -99,7 +134,12 @@ export function CardEditScreen() {
       await new Promise((resolve) => setTimeout(resolve, 0))
     }
     const values = inputRef.current
-    if (values.term.trim() === '' && values.definition.trim() === '') return 'none'
+    const blank =
+      values.term.trim() === '' &&
+      values.definition.trim() === '' &&
+      !hasImage(values.termImage, editingCard?.termImageId) &&
+      !hasImage(values.definitionImage, editingCard?.definitionImageId)
+    if (blank) return 'none'
     try {
       if (editingId === null) {
         await createCard(setId, values)
@@ -187,6 +227,40 @@ export function CardEditScreen() {
     else notify(wroteInfo ? '保存しました' : 'すべて保存済みです')
   }
 
+  /**
+   * 数式の記法をカーソル位置へ差し込む (specs.md §4.4.3).
+   * 直前まで触っていた欄を対象にする.
+   */
+  const insertSnippet = (snippet: string, caret: number) => {
+    const element =
+      activeField === 'term'
+        ? termRef.current
+        : activeField === 'definition'
+          ? definitionRef.current
+          : hintRef.current
+    if (element === null) return
+    const start = element.selectionStart ?? element.value.length
+    const end = element.selectionEnd ?? start
+    const next = element.value.slice(0, start) + snippet + element.value.slice(end)
+    updateInput({ [activeField]: next } as Partial<CardInput>)
+    // 値の反映を待ってからカーソルを合わせる. 先に動かすと React の再描画で戻される
+    requestAnimationFrame(() => {
+      element.focus()
+      element.setSelectionRange(start + caret, start + caret)
+    })
+  }
+
+  /** 貼り付けた画像を, 直前まで触っていた面に付ける (specs.md §4.4.2) */
+  const pasteImage = async (file: File) => {
+    try {
+      const image = await compressImage(file, settings.imageMaxEdge)
+      const side = activeField === 'definition' ? 'definitionImage' : 'termImage'
+      updateInput({ [side]: { kind: 'set', image } } as Partial<CardInput>)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '画像を取り込めませんでした。')
+    }
+  }
+
   /** 変換の開始と終了を拾う. どの入力欄でも同じ扱いでよいので form でまとめて受ける */
   const compositionHandlers = {
     onCompositionStart: () => {
@@ -198,7 +272,14 @@ export function CardEditScreen() {
   }
 
   const startEdit = (card: Card) => {
-    const values = { term: card.term, definition: card.definition, hint: card.hint }
+    // 画像は「触っていない」状態から始める. 明示的に差し替えるまで元のままにする
+    const values: CardInput = {
+      term: card.term,
+      definition: card.definition,
+      hint: card.hint,
+      termImage: KEEP,
+      definitionImage: KEEP,
+    }
     setEditingId(card.id)
     inputRef.current = values
     setInput(values)
@@ -302,6 +383,15 @@ export function CardEditScreen() {
       <form
         className="form card-form"
         {...compositionHandlers}
+        // 入力しながらスクリーンショットを貼れるようにする. 画像欄が自分で処理した
+        // 場合は defaultPrevented が立つため, ここでは扱わない
+        onPaste={(event) => {
+          if (!set.enableImages || event.defaultPrevented) return
+          const file = event.clipboardData.files[0]
+          if (!isImageFile(file)) return
+          event.preventDefault()
+          void pasteImage(file)
+        }}
         onSubmit={(event) => {
           event.preventDefault()
           void handleSubmit()
@@ -334,31 +424,101 @@ export function CardEditScreen() {
             className="input"
             rows={2}
             value={input.term}
+            onFocus={() => setActiveField('term')}
             onChange={(event) => updateInput({ term: event.target.value })}
             maxLength={1000}
           />
         </label>
 
+        {set.enableImages && (
+          <ImageField
+            label="表の画像"
+            current={
+              editingCard?.termImageId != null
+                ? (assetById.get(editingCard.termImageId) ?? null)
+                : null
+            }
+            currentUrl={
+              editingCard?.termImageId != null
+                ? (assetUrls.get(editingCard.termImageId) ?? null)
+                : null
+            }
+            edit={input.termImage ?? KEEP}
+            onChange={(edit) => updateInput({ termImage: edit })}
+            maxEdge={settings.imageMaxEdge}
+          />
+        )}
+
         <label className="field">
           <span className="field__label">定義 (裏)</span>
           <textarea
+            ref={definitionRef}
             className="input"
             rows={3}
             value={input.definition}
+            onFocus={() => setActiveField('definition')}
             onChange={(event) => updateInput({ definition: event.target.value })}
             maxLength={2000}
           />
         </label>
 
+        {set.enableImages && (
+          <ImageField
+            label="裏の画像"
+            current={
+              editingCard?.definitionImageId != null
+                ? (assetById.get(editingCard.definitionImageId) ?? null)
+                : null
+            }
+            currentUrl={
+              editingCard?.definitionImageId != null
+                ? (assetUrls.get(editingCard.definitionImageId) ?? null)
+                : null
+            }
+            edit={input.definitionImage ?? KEEP}
+            onChange={(edit) => updateInput({ definitionImage: edit })}
+            maxEdge={settings.imageMaxEdge}
+          />
+        )}
+
         <label className="field">
           <span className="field__label">ヒント (任意)</span>
           <input
+            ref={hintRef}
             className="input"
             value={input.hint}
+            onFocus={() => setActiveField('hint')}
             onChange={(event) => updateInput({ hint: event.target.value })}
             maxLength={200}
           />
         </label>
+
+        {/* 数式は書いた形と出る形が違うため, 補助と確認をその場に置く (specs.md §4.4.3) */}
+        {set.enableMath && (
+          <div className="field">
+            <span className="field__label">数式</span>
+            <MathPalette onInsert={insertSnippet} />
+            {(input.term !== '' || input.definition !== '' || input.hint !== '') && (
+              <div className="math-preview">
+                {input.term !== '' && (
+                  <p className="math-preview__row">
+                    <RichText text={input.term} math />
+                  </p>
+                )}
+                {input.definition !== '' && (
+                  <p className="math-preview__row">
+                    <RichText text={input.definition} math />
+                  </p>
+                )}
+                {input.hint !== '' && (
+                  <p className="math-preview__row math-preview__row--hint">
+                    <RichText text={input.hint} math />
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {error !== null && <p className="alert">{error}</p>}
 
@@ -440,8 +600,26 @@ export function CardEditScreen() {
               >
                 <Icon name="star" size={17} />
               </button>
-              <div className="cards__term">{card.term}</div>
-              <div className="cards__definition">{card.definition}</div>
+              <div className="cards__term">
+                {set.enableImages && card.termImageId !== null && (
+                  <img
+                    className="cards__thumb"
+                    src={assetUrls.get(card.termImageId)}
+                    alt="表の画像"
+                  />
+                )}
+                <RichText text={card.term} math={set.enableMath} />
+              </div>
+              <div className="cards__definition">
+                {set.enableImages && card.definitionImageId !== null && (
+                  <img
+                    className="cards__thumb"
+                    src={assetUrls.get(card.definitionImageId)}
+                    alt="裏の画像"
+                  />
+                )}
+                <RichText text={card.definition} math={set.enableMath} />
+              </div>
               {card.hint !== '' && <div className="cards__hint">ヒント: {card.hint}</div>}
               <div className="cards__tools">
                 <button type="button" className="btn btn--small" onClick={() => startEdit(card)}>

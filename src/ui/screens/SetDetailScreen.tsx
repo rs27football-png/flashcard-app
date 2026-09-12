@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import type { Card, Folder, ProgressSummary, QuizOptions, StudyOptions } from '../../core/types'
+import type { Asset, Card, Folder, ProgressSummary, QuizOptions, StudyOptions } from '../../core/types'
 import { listFolders } from '../../core/db/folders'
+import { listAssets } from '../../core/db/assets'
 import { listCards, setStarred } from '../../core/db/cards'
 import {
   getProgressSummary,
@@ -17,8 +18,10 @@ import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
 import { ProgressBar } from '../components/ProgressBar'
 import { QuizOptionsForm } from '../components/QuizOptionsForm'
+import { RichText } from '../components/RichText'
 import { SetActions } from '../components/SetActions'
 import { StudyOptionsForm } from '../components/StudyOptionsForm'
+import { useAssetUrls } from '../hooks/useAssetUrls'
 
 const EMPTY_SUMMARY: ProgressSummary = { total: 0, known: 0, learning: 0, unseen: 0 }
 
@@ -37,6 +40,8 @@ export function SetDetailScreen() {
   const folders = useLiveQuery(() => listFolders(), [], [] as Folder[])
   const cards = useLiveQuery(() => listCards(setId), [setId], [] as Card[])
   const summary = useLiveQuery(() => getProgressSummary(setId), [setId], EMPTY_SUMMARY)
+  const assets = useLiveQuery(() => listAssets(setId), [setId], [] as Asset[])
+  const assetUrls = useAssetUrls(assets)
 
   // 検索結果から来たときは, 該当のカードまで送って一時的に強調する (specs.md §4.10)
   const [searchParams] = useSearchParams()
@@ -104,6 +109,15 @@ export function SetDetailScreen() {
             title="カードを編集"
           >
             <Icon name="edit" size={19} />
+          </Link>
+          {/* 画像と数式の切り替え (specs.md §4.4.1). 使う頻度が低いため別画面に置く */}
+          <Link
+            className="btn btn--tool"
+            to={`/sets/${set.id}/settings`}
+            aria-label="セットの設定"
+            title="セットの設定"
+          >
+            <Icon name="settings" size={19} />
           </Link>
           {/* コピー・統合・分割 (specs.md §4.9) */}
           <button
@@ -190,8 +204,26 @@ export function SetDetailScreen() {
               >
                 <Icon name="star" size={17} />
               </button>
-              <div className="cards__term">{card.term}</div>
-              <div className="cards__definition">{card.definition}</div>
+              <div className="cards__term">
+                {set.enableImages && card.termImageId !== null && (
+                  <img
+                    className="cards__thumb"
+                    src={assetUrls.get(card.termImageId)}
+                    alt="表の画像"
+                  />
+                )}
+                <RichText text={card.term} math={set.enableMath} />
+              </div>
+              <div className="cards__definition">
+                {set.enableImages && card.definitionImageId !== null && (
+                  <img
+                    className="cards__thumb"
+                    src={assetUrls.get(card.definitionImageId)}
+                    alt="裏の画像"
+                  />
+                )}
+                <RichText text={card.definition} math={set.enableMath} />
+              </div>
             </li>
           ))}
         </ul>
