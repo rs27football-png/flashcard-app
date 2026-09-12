@@ -462,6 +462,50 @@ body {
   background-color: var(--surface-hi);
 }
 
+/* ---- セット詳細の見出しと学習の開始 ---- */
+
+.set-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-block: 0.5rem 1.25rem;
+}
+
+.set-head__text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.set-head__tools {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.375rem;
+}
+
+/* 文字を持たない操作ボタン. 指で押せるよう 44px 四方を確保する */
+.btn--tool {
+  width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  color: var(--fg-muted);
+}
+
+.btn--tool:hover {
+  color: var(--fg);
+}
+
+/* 学習の開始. 2つを同じ幅で並べ, 画面の主役にする */
+.study-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.625rem;
+}
+
+.btn--large {
+  min-height: 3rem;
+  font-size: 0.9375rem;
+}
+
 /*
  * セット詳細の進捗. 上のセット情報と下のカード一覧のあいだに挟まるため,
  * 上下に余白を多めに取り, 枠で囲んで区切りをはっきりさせる.

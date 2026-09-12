@@ -62,43 +62,58 @@ export function SetDetailScreen() {
         currentSetId={set.id}
       />
 
-      <header className="screen__head">
-        <div>
+      <header className="set-head">
+        <div className="set-head__text">
           <h1 className="screen__title">{set.name}</h1>
           {set.description !== '' && <p className="screen__desc">{set.description}</p>}
         </div>
-        <div className="screen__actions">
-          {/* インポートへの導線はカード編集画面に集約している ( specs.md §4.3 ) */}
-          <Link className="btn" to={`/sets/${set.id}/cards`}>
-            <Icon name="edit" />
-            カードを編集
-          </Link>
-          <Link className="btn" to={`/sets/${set.id}/settings`}>
-            <Icon name="settings" />
-            セット設定
-          </Link>
-          <button
-            type="button"
-            className="btn btn--primary"
-            disabled={cards.length === 0}
-            onClick={() => setStudyOptions(normalizeStudyOptions(set.studyOptions))}
+        {/*
+          使う頻度の低い編集と設定は, アイコンだけにしてセット名の横へ寄せる.
+          役割の違うボタンが縦に詰まって並ぶのを避け, 学習の開始ボタンを主役にするため.
+          インポートへの導線はカード編集画面に集約している ( specs.md §4.3 )
+        */}
+        <div className="set-head__tools">
+          <Link
+            className="btn btn--tool"
+            to={`/sets/${set.id}/cards`}
+            aria-label="カードを編集"
+            title="カードを編集"
           >
-            <Icon name="play" />
-            暗記モード
-          </button>
-          {/* 選択肢を作るにはカードが2枚以上要る ( specs.md §4.7.2 ) */}
-          <button
-            type="button"
-            className="btn btn--primary"
-            disabled={cards.length < 2}
-            title={cards.length < 2 ? 'カードが2枚以上必要です' : undefined}
-            onClick={() => setQuizOptions(normalizeQuizOptions(set.quizOptions))}
+            <Icon name="edit" size={19} />
+          </Link>
+          <Link
+            className="btn btn--tool"
+            to={`/sets/${set.id}/settings`}
+            aria-label="セット設定"
+            title="セット設定"
           >
-            <Icon name="quiz" />
-            4択モード
-          </button>
+            <Icon name="settings" size={19} />
+          </Link>
         </div>
       </header>
+
+      <div className="study-actions">
+        <button
+          type="button"
+          className="btn btn--primary btn--large"
+          disabled={cards.length === 0}
+          onClick={() => setStudyOptions(normalizeStudyOptions(set.studyOptions))}
+        >
+          <Icon name="play" />
+          暗記モード
+        </button>
+        {/* 選択肢を作るにはカードが2枚以上要る ( specs.md §4.7.2 ) */}
+        <button
+          type="button"
+          className="btn btn--primary btn--large"
+          disabled={cards.length < 2}
+          title={cards.length < 2 ? 'カードが2枚以上必要です' : undefined}
+          onClick={() => setQuizOptions(normalizeQuizOptions(set.quizOptions))}
+        >
+          <Icon name="quiz" />
+          4択モード
+        </button>
+      </div>
 
       {/* 上のセット情報と下のカード一覧を区切る. 進捗とそのリセットを1つの枠にまとめる */}
       <section className="set-progress" aria-label="進捗">
@@ -133,7 +148,7 @@ export function SetDetailScreen() {
       {visibleCards.length === 0 ? (
         <p className="empty">
           {cards.length === 0
-            ? 'カードがありません. 「カードを編集」から追加してください.'
+            ? 'カードがありません. セット名の横の鉛筆ボタン ( カードを編集 ) から追加してください.'
             : '★を付けたカードはありません.'}
         </p>
       ) : (
