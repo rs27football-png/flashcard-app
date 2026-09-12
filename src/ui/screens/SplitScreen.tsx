@@ -41,7 +41,7 @@ export function SplitScreen() {
     return (
       <div className="screen">
         <h1 className="screen__title">分割しました</h1>
-        <p className="note">「{done.sourceName}」から {done.names.length} 個のセットを作りました.</p>
+        <p className="note">「{done.sourceName}」から {done.names.length} 個のセットを作りました。</p>
         <ul className="pick-list">
           {done.result.setIds.map((id, index) => (
             <li key={id}>
@@ -55,7 +55,7 @@ export function SplitScreen() {
           ))}
         </ul>
         {done.result.sourceDeleted ? (
-          <p className="note">すべてのカードを移したため, 元のセットは削除しました.</p>
+          <p className="note">すべてのカードを移したため、元のセットは削除しました。</p>
         ) : (
           <Link className="btn" to={`/sets/${setId}`}>
             元のセットへ戻る
@@ -69,7 +69,7 @@ export function SplitScreen() {
   if (set === null) {
     return (
       <div className="screen">
-        <p className="empty">この学習セットは見つかりませんでした.</p>
+        <p className="empty">この学習セットは見つかりませんでした。</p>
         <Link className="btn" to="/">
           ホームへ戻る
         </Link>
@@ -92,17 +92,17 @@ export function SplitScreen() {
   // 1つにまとまるだけの分け方は分割にならないため受け付けない
   const invalidReason =
     cards.length === 0
-      ? 'カードがありません.'
+      ? 'カードがありません。'
       : kind === 'manual'
         ? picked.size === 0
-          ? '切り出すカードを選んでください.'
+          ? '切り出すカードを選んでください。'
           : name.trim() === ''
-            ? '新しいセットの名前を入れてください.'
+            ? '新しいセットの名前を入れてください。'
             : null
         : plan.length < 2
           ? kind === 'count'
-            ? `${cards.length} 枚より少ない枚数を指定してください.`
-            : '★付きのカードと★なしのカードの両方が必要です.'
+            ? `${cards.length} 枚より少ない枚数を指定してください。`
+            : '★付きのカードと★なしのカードの両方が必要です。'
           : null
 
   const togglePick = (cardId: string) => {
@@ -121,7 +121,7 @@ export function SplitScreen() {
       const result = await splitSet({ setId, rule, folderId: targetFolderId, moveCards })
       setDone({ result, names: plan.map((group) => group.name), sourceName: set.name })
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '分割に失敗しました.')
+      setError(cause instanceof Error ? cause.message : '分割に失敗しました。')
       setBusy(false)
     }
   }
@@ -226,18 +226,18 @@ export function SplitScreen() {
           </label>
           <Toggle
             label="元のセットから取り除く (移動)"
-            description="オフなら元のセットはそのまま残り, カードを複製する"
+            description="オフなら元のセットはそのまま残り、カードを複製する"
             checked={moveCards}
             onChange={setMoveCards}
           />
         </div>
-        <p className="note">分割先は元の進捗とリッチコンテンツの設定を引き継ぎます.</p>
+        <p className="note">分割先は元の進捗とリッチコンテンツの設定を引き継ぎます。</p>
       </section>
 
       <section className="section">
         <h2 className="section__title">作られるセット</h2>
         {plan.length === 0 ? (
-          <p className="note">まだありません.</p>
+          <p className="note">まだありません。</p>
         ) : (
           <ul className="plan-list">
             {plan.map((group) => (
@@ -250,7 +250,7 @@ export function SplitScreen() {
         )}
         {movedAll && (
           <p className="alert" style={{ marginTop: '0.75rem' }}>
-            すべてのカードが移るため, 元のセット「{set.name}」は削除されます.
+            すべてのカードが移るため、元のセット「{set.name}」は削除されます。
           </p>
         )}
       </section>

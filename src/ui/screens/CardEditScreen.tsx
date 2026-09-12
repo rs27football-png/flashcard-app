@@ -13,7 +13,7 @@ import {
   updateCard,
   type CardInput,
 } from '../../core/db/cards'
-import { getSet } from '../../core/db/sets'
+import { getSet, updateSetInfo } from '../../core/db/sets'
 import { Breadcrumb } from '../components/Breadcrumb'
 import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
@@ -33,6 +33,11 @@ export function CardEditScreen() {
   const [pendingDelete, setPendingDelete] = useState<Card | null>(null)
   /** 「保存」を押したときの手応え. データ自体は追加・更新の時点で書き込まれている */
   const [savedNotice, setSavedNotice] = useState<string | null>(null)
+  /**
+   * セットの名前と説明の下書き。null なら保存済みの値をそのまま表示する。
+   * 保存したら null に戻し、以降はライブクエリの値を映す (specs.md §4.2)。
+   */
+  const [infoDraft, setInfoDraft] = useState<{ name: string; description: string } | null>(null)
   const noticeTimerRef = useRef<number | null>(null)
   const termRef = useRef<HTMLTextAreaElement>(null)
   // 保存時に読むのは常に最新の入力値でなければならない. 日本語入力の確定を待つあいだに
@@ -86,7 +91,7 @@ export function CardEditScreen() {
       termRef.current?.focus()
       return true
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '保存に失敗しました.')
+      setError(cause instanceof Error ? cause.message : '保存に失敗しました。')
       return false
     }
   }
@@ -98,14 +103,52 @@ export function CardEditScreen() {
    * データは失われない. 書けているかどうかが利用者から見えないため, 手応えを返す
    * 場所として用意している. 書きかけの入力が残っていればここで確定させる.
    */
-  const saveNow = async () => {
-    const wrote = await submit()
-    setSavedNotice(wrote ? '保存しました' : 'すべて保存済みです')
+  const notify = (message: string) => {
+    setSavedNotice(message)
     if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current)
     noticeTimerRef.current = window.setTimeout(() => {
       setSavedNotice(null)
       noticeTimerRef.current = null
     }, 2400)
+  }
+
+  /** 表示に使う値。下書きがなければ保存済みの値をそのまま映す */
+  const info = infoDraft ?? { name: set?.name ?? '', description: set?.description ?? '' }
+  const infoDirty =
+    infoDraft !== null &&
+    set !== undefined &&
+    set !== null &&
+    (infoDraft.name.trim() !== set.name || infoDraft.description.trim() !== set.description)
+
+  /**
+   * セットの名前と説明を保存する (specs.md §4.2)。
+   * @returns 実際に書き込んだかどうか
+   */
+  const saveInfo = async (): Promise<boolean> => {
+    if (set === undefined || set === null || infoDraft === null) return false
+    const name = infoDraft.name.trim()
+    if (name === '') {
+      setError('セット名を入れてください')
+      return false
+    }
+    const description = infoDraft.description.trim()
+    if (name === set.name && description === set.description) {
+      setInfoDraft(null)
+      return false
+    }
+    await updateSetInfo(setId, name, description)
+    setInfoDraft(null)
+    return true
+  }
+
+  const saveInfoOnly = async () => {
+    if (await saveInfo()) notify('保存しました')
+  }
+
+  const saveNow = async () => {
+    const wroteCard = await submit()
+    const wroteInfo = await saveInfo()
+    notify(wroteCard || wroteInfo ? '保存しました' : 'すべて保存済みです')
   }
 
   /** 変換の開始と終了を拾う. どの入力欄でも同じ扱いでよいので form でまとめて受ける */
@@ -137,7 +180,7 @@ export function CardEditScreen() {
   if (set === null) {
     return (
       <div className="screen">
-        <p className="empty">この学習セットは見つかりませんでした.</p>
+        <p className="empty">この学習セットは見つかりませんでした。</p>
         <Link className="btn" to="/">
           ホームへ戻る
         </Link>
@@ -178,6 +221,42 @@ export function CardEditScreen() {
           {savedNotice}
         </p>
       )}
+
+      {/* 名前と説明はセットの中身であるため、カードと同じ画面で直せるようにする (specs.md §4.2) */}
+      <section className="section">
+        <h2 className="section__title">セットの情報</h2>
+        <div className="form">
+          <label className="field">
+            <span className="field__label">セット名</span>
+            <input
+              className="input"
+              value={info.name}
+              maxLength={100}
+              onChange={(event) => setInfoDraft({ ...info, name: event.target.value })}
+            />
+          </label>
+          <label className="field">
+            <span className="field__label">説明 (任意)</span>
+            <textarea
+              className="input"
+              rows={2}
+              maxLength={500}
+              value={info.description}
+              onChange={(event) => setInfoDraft({ ...info, description: event.target.value })}
+            />
+          </label>
+          {infoDirty && (
+            <div className="form__actions">
+              <button type="button" className="btn" onClick={() => setInfoDraft(null)}>
+                取り消す
+              </button>
+              <button type="button" className="btn btn--save" onClick={() => void saveInfoOnly()}>
+                変更を保存
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
 
       <form
         className="form card-form"
@@ -245,7 +324,7 @@ export function CardEditScreen() {
             {editingId === null ? '追加' : '更新'}
           </button>
         </div>
-        <p className="hint">Ctrl + Enter でも保存できます.</p>
+        <p className="hint">Ctrl + Enter でも保存できます。</p>
       </form>
 
       <div className="toolbar">
@@ -273,7 +352,7 @@ export function CardEditScreen() {
       </div>
 
       {cards.length === 0 ? (
-        <p className="empty">まだカードがありません.</p>
+        <p className="empty">まだカードがありません。</p>
       ) : (
         <ul className="cards cards--editable">
           {cards.map((card, index) => (

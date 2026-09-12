@@ -33,7 +33,7 @@ function trimInput(input: CardInput): CardInput {
  */
 function assertNotEmpty(input: CardInput): void {
   if (input.term === '' && input.definition === '') {
-    throw new Error('用語と定義の少なくとも一方を入力してください.')
+    throw new Error('用語と定義の少なくとも一方を入力してください。')
   }
 }
 

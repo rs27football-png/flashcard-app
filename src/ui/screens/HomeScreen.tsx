@@ -15,11 +15,10 @@ import {
 } from '../../core/db/folders'
 import { countCardsPerSet, createSet, listAllSets, moveSet } from '../../core/db/sets'
 import { copyFolder } from '../../core/db/setOps'
-import { CopySetDialog } from '../components/CopySetDialog'
 import { FolderSelect } from '../components/FolderSelect'
 import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
-import { SetActionsSheet } from '../components/SetActionsSheet'
+import { SetActions } from '../components/SetActions'
 import { useExpandedFolders } from '../hooks/useExpandedFolders'
 import { DROP_ATTRIBUTE, ROOT_DROP_VALUE, useSetDrag } from '../hooks/useSetDrag'
 
@@ -32,8 +31,7 @@ type Dialog =
   | { type: 'moveFolder'; folder: Folder }
   | { type: 'deleteFolder'; folder: Folder; contents: FolderContents }
   | { type: 'createSet'; folderId: string | null }
-  | { type: 'setMenu'; set: StudySet }
-  | { type: 'copySet'; set: StudySet }
+  | { type: 'setActions'; set: StudySet }
 
 const CLOSED: Dialog = { type: 'none' }
 
@@ -77,7 +75,7 @@ export function HomeScreen() {
       await moveFolder(folder.id, parentId)
       close()
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '移動に失敗しました.')
+      setError(cause instanceof Error ? cause.message : '移動に失敗しました。')
     }
   }
 
@@ -150,7 +148,7 @@ export function HomeScreen() {
       >
         {isEmpty ? (
           <p className="empty">
-            まだ何もありません. 「学習セット」から最初のセットを作成してください.
+            まだ何もありません。「学習セット」から最初のセットを作成してください。
           </p>
         ) : (
           <ul className="tree">
@@ -170,7 +168,7 @@ export function HomeScreen() {
                 onAddSet={(folderId) => setDialog({ type: 'createSet', folderId })}
                 onAddFolder={(parentId) => setDialog({ type: 'createFolder', parentId })}
                 onGrip={startDrag}
-                onSetMenu={(target) => setDialog({ type: 'setMenu', set: target })}
+                onSetMenu={(target) => setDialog({ type: 'setActions', set: target })}
               />
             ))}
             {rootSets.map((set) => (
@@ -181,7 +179,7 @@ export function HomeScreen() {
                 depth={0}
                 dragging={drag?.setId === set.id}
                 onGrip={startDrag}
-                onMenu={(target) => setDialog({ type: 'setMenu', set: target })}
+                onMenu={(target) => setDialog({ type: 'setActions', set: target })}
               />
             ))}
           </ul>
@@ -191,9 +189,9 @@ export function HomeScreen() {
       {drag !== null && (
         <>
           {/*
-            ルートへ戻す落下先. フォルダの節は配下の余白まで覆うため, ツリーの下端に
-            落としてもフォルダに入ってしまう. 画面上端に固定した帯を別に用意する.
-            固定配置にしているのは, ドラッグの最中に行がずれないようにするため.
+            ルートへ戻す落下先。フォルダの節は配下の余白まで覆うため、ツリーの下端に
+            落としてもフォルダに入ってしまう。画面上端に固定した帯を別に用意する。
+            固定配置にしているのは、ドラッグの最中に行がずれないようにするため。
           */}
           <div
             {...{ [DROP_ATTRIBUTE]: ROOT_DROP_VALUE }}
@@ -325,24 +323,17 @@ export function HomeScreen() {
         )}
       </Modal>
 
-      {dialog.type === 'setMenu' && (
-        <SetActionsSheet
-          set={dialog.set}
-          onClose={close}
-          onCopy={() => setDialog({ type: 'copySet', set: dialog.set })}
-        />
-      )}
-
-      {dialog.type === 'copySet' && (
-        <CopySetDialog
+      {dialog.type === 'setActions' && (
+        <SetActions
           set={dialog.set}
           folders={folders}
           onClose={close}
           onCopied={(_, folderId) => {
-            // ホームからのコピーはその場に留まり, 置いた先を開いて見せる
+            // ホームからのコピーはその場に留まり、置いた先を開いて見せる
             if (folderId !== null) expand(folderId)
             close()
           }}
+          onDeleted={close}
         />
       )}
     </div>
@@ -673,7 +664,7 @@ function DeleteFolderBody({
         「{folder.name}」を削除します。
         {isEmpty
           ? 'このフォルダは空です。'
-          : `配下に下位フォルダ ${contents.folderCount} 件, 学習セット ${contents.setCount} 件 (カード ${contents.cardCount} 枚) があります。`}
+          : `配下に下位フォルダ ${contents.folderCount} 件、学習セット ${contents.setCount} 件 (カード ${contents.cardCount} 枚) があります。`}
       </p>
       {isEmpty ? (
         <div className="form__actions">
@@ -691,7 +682,7 @@ function DeleteFolderBody({
       ) : (
         <div className="menu">
           <button type="button" className="menu__item" onClick={() => void onDelete('promote')}>
-            配下をルートへ移動し, このフォルダのみ削除する
+            配下をルートへ移動し、このフォルダのみ削除する
           </button>
           <button
             type="button"

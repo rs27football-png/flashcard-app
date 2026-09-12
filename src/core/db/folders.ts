@@ -69,7 +69,7 @@ export function collectSubtreeIds(folders: readonly Folder[], rootId: string): s
 export async function moveFolder(id: string, newParentId: string | null): Promise<void> {
   const folders = await listFolders()
   if (newParentId !== null && collectSubtreeIds(folders, id).includes(newParentId)) {
-    throw new Error('自身または自身の配下のフォルダへは移動できません.')
+    throw new Error('自身または自身の配下のフォルダへは移動できません。')
   }
   await db.folders.update(id, {
     parentId: newParentId,

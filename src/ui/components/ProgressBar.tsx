@@ -15,7 +15,7 @@ export function ProgressBar({ summary }: { summary: ProgressSummary }) {
       <div
         className="progress__bar"
         role="img"
-        aria-label={`習得済 ${known} 枚, 学習中 ${learning} 枚, 未学習 ${unseen} 枚`}
+        aria-label={`習得済 ${known} 枚、学習中 ${learning} 枚、未学習 ${unseen} 枚`}
       >
         <span className="progress__seg progress__seg--known" style={{ width: `${percent(known)}%` }} />
         <span

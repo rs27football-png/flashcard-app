@@ -30,10 +30,10 @@ interface AnswerRecord {
 }
 
 const EMPTY_MESSAGE: Record<QuizEmptyReason, string> = {
-  'too-few-cards': 'カードが2枚未満のため, 4択モードを始められません.',
-  'no-starred': '★を付けたカードがありません. 「★のみ」を外すか, カードに★を付けてください.',
-  'no-learning': '学習中のカードがありません. 「学習中のカードのみ」を外してください.',
-  'no-questions': '出題できるカードがありません. 選択肢を作るには, 異なる答えを持つカードが2枚以上必要です.',
+  'too-few-cards': 'カードが2枚未満のため、4択モードを始められません。',
+  'no-starred': '★を付けたカードがありません。「★のみ」を外すか、カードに★を付けてください。',
+  'no-learning': '学習中のカードがありません。「学習中のカードのみ」を外してください。',
+  'no-questions': '出題できるカードがありません。選択肢を作るには、異なる答えを持つカードが2枚以上必要です。',
 }
 
 function formatDuration(ms: number): string {
@@ -179,7 +179,7 @@ export function QuizScreen() {
   if (phase.kind === 'missing' || set === null || options === null) {
     return (
       <div className="screen">
-        <p className="empty">この学習セットは見つかりませんでした.</p>
+        <p className="empty">この学習セットは見つかりませんでした。</p>
         <Link className="btn" to="/">
           ホームへ戻る
         </Link>
@@ -194,7 +194,7 @@ export function QuizScreen() {
         <p className="empty">{EMPTY_MESSAGE[phase.reason]}</p>
         {skipped.empty > 0 && (
           <p className="note">
-            答えが空のカードが {skipped.empty} 枚あります. カード編集で答えを入れると出題されます.
+            答えが空のカードが {skipped.empty} 枚あります。カード編集で答えを入れると出題されます。
           </p>
         )}
         <div className="form__actions">
@@ -258,8 +258,8 @@ export function QuizScreen() {
       {/* 除外した枚数は開始時に示す (specs.md §4.7.2) */}
       {index === 0 && !answered && skippedTotal > 0 && (
         <p className="note">
-          {skipped.empty > 0 && `答えが空のカード ${skipped.empty} 枚を除きました. `}
-          {skipped.noDistractor > 0 && `選択肢を作れないカード ${skipped.noDistractor} 枚を除きました.`}
+          {skipped.empty > 0 && `答えが空のカード ${skipped.empty} 枚を除きました。`}
+          {skipped.noDistractor > 0 && `選択肢を作れないカード ${skipped.noDistractor} 枚を除きました。`}
         </p>
       )}
 
@@ -369,7 +369,7 @@ function QuizResult({ set, answers, durationMs, onRetryWrong, onRepeat }: QuizRe
       </div>
 
       {wrong.length === 0 ? (
-        <p className="note">全問正解です. お疲れさまでした.</p>
+        <p className="note">全問正解です。お疲れさまでした。</p>
       ) : (
         <section className="section">
           <h2 className="section__title">間違えた問題 ({wrong.length} 問)</h2>

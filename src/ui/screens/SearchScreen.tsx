@@ -113,7 +113,7 @@ export function SearchScreen() {
 
       {normalizedQuery === '' ? (
         <p className="note">
-          すべての学習セットから探します. ひらがなとカタカナ, 全角と半角, 大文字と小文字は区別しません.
+          すべての学習セットから探します。ひらがなとカタカナ、全角と半角、大文字と小文字は区別しません。
         </p>
       ) : (
         <>
@@ -144,7 +144,7 @@ export function SearchScreen() {
               {result.totalCards > MAX_CARD_HITS && ` — 先頭 ${MAX_CARD_HITS} 件を表示`}
             </h2>
             {result.cards.length === 0 ? (
-              <p className="note">一致するカードはありません.</p>
+              <p className="note">一致するカードはありません。</p>
             ) : (
               <ul className="search-list">
                 {result.cards.map((hit) => {
