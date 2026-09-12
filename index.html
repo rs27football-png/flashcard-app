@@ -3,8 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- iOS はホーム画面の図柄に SVG を使えないため PNG を別に置く -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#14161a" />
+    <meta name="description" content="応用情報技術者試験と大学の試験対策のための単語帳" />
+    <!-- iOS でホーム画面から開いたときにブラウザの枠を出さない -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- black-translucent は本文を状態表示欄の下まで広げるため, ライトテーマで
+         白い文字が読めなくなる. 既定のままとし, 色は theme-color に追随させる -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="単語帳" />
     <title>単語帳アプリ</title>
   </head>
   <body>

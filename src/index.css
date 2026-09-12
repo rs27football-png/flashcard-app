@@ -27,6 +27,47 @@
   line-height: 1.6;
 }
 
+/*
+ * 明るいテーマ (specs.md §4.12).
+ *
+ * 既定はダークのままとし, 明るくする指定があるときだけ色を差し替える.
+ * data-theme が付いていなければ端末の設定に従う ( システム追従 ).
+ * 色は変数だけで持たせてあるため, ここを入れ替えるだけで全画面に及ぶ.
+ */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    color-scheme: light;
+
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface-hi: #e9ebf0;
+    --border: #d2d6de;
+    --fg: #1b1d21;
+    --fg-muted: #5f6672;
+    --accent: #2563eb;
+    --accent-fg: #ffffff;
+    --danger: #d92d20;
+    --known: #0f8a54;
+    --learning: #b26a00;
+  }
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-hi: #e9ebf0;
+  --border: #d2d6de;
+  --fg: #1b1d21;
+  --fg-muted: #5f6672;
+  --accent: #2563eb;
+  --accent-fg: #ffffff;
+  --danger: #d92d20;
+  --known: #0f8a54;
+  --learning: #b26a00;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -2265,4 +2306,106 @@ mark.hit {
   gap: 0.5rem;
   color: var(--fg-muted);
   font-size: 0.9375rem;
+}
+
+
+/* ==== 設定 (specs.md §4.12) ==== */
+
+/* 3つ以上の排他選択. トグルでは表せず, 選択肢を常に見せたい場合に使う */
+.segmented {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--surface);
+}
+
+.segmented__item {
+  flex: 1 1 0;
+  padding: 0.5rem 0.25rem;
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+  background-color: transparent;
+  color: var(--fg-muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.segmented__item--on {
+  background-color: var(--accent);
+  color: var(--accent-fg);
+}
+
+.section__subtitle {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* 取り込み結果など, 節の中にもう一段まとめて置きたいもの */
+.section--inset {
+  margin-top: 0.75rem;
+  background-color: var(--bg);
+}
+
+.usage__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.usage__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.usage__value {
+  flex: 0 0 auto;
+  color: var(--fg-muted);
+}
+
+/* 取り込みのボタンは <label> なので, 押せる見た目に揃える */
+label.btn {
+  cursor: pointer;
+}
+
+/* 書き出しは取り込みの逆向き. 同じ矢印の絵を上下反転させて使う */
+.icon--flip {
+  transform: rotate(180deg);
+}
+
+/* ---- 更新の知らせ (specs.md §6.1) ---- */
+
+.pwa-toast {
+  display: flex;
+  position: fixed;
+  z-index: 40;
+  right: 0.75rem;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  left: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  max-width: 30rem;
+  margin-inline: auto;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--surface-hi);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 35%);
+}
+
+.pwa-toast__text {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.pwa-toast__actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.375rem;
 }
