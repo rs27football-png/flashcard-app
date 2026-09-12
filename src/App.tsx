@@ -2,7 +2,6 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { HomeScreen } from './ui/screens/HomeScreen'
 import { SetDetailScreen } from './ui/screens/SetDetailScreen'
 import { CardEditScreen } from './ui/screens/CardEditScreen'
-import { SetSettingsScreen } from './ui/screens/SetSettingsScreen'
 import { ImportScreen } from './ui/screens/ImportScreen'
 import { StudyScreen } from './ui/screens/StudyScreen'
 import { QuizScreen } from './ui/screens/QuizScreen'
@@ -24,7 +23,6 @@ export default function App() {
         <Route path="/sets/:setId/merge" element={<MergeScreen />} />
         <Route path="/sets/:setId/split" element={<SplitScreen />} />
         <Route path="/search" element={<SearchScreen />} />
-        <Route path="/sets/:setId/settings" element={<SetSettingsScreen />} />
         <Route path="/import" element={<ImportScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

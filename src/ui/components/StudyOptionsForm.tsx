@@ -21,7 +21,7 @@ export function StudyOptionsForm({
     <div className="options">
       <Toggle
         label="進み具合を把握する"
-        description="判定を保存し, 習得済を次から出さない"
+        description="判定を保存し、習得済を次から出さない"
         checked={value.trackProgress}
         onChange={(checked) => onChange({ ...value, trackProgress: checked })}
       />

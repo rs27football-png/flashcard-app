@@ -56,7 +56,7 @@ export function MergeScreen() {
       return next
     })
   }
-  const { dragIndex, start: startReorder } = useReorderDrag(moveTo)
+  const { dragIndex, insertIndex, start: startReorder } = useReorderDrag(moveTo)
 
   // 統合し終えたあとは, 元のセットが消えていても結果を出す
   if (result !== null) {
@@ -67,7 +67,7 @@ export function MergeScreen() {
         await deleteSets(leftovers.map((source) => source.id))
         setSourceDecision('deleted')
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : '削除に失敗しました.')
+        setError(cause instanceof Error ? cause.message : '削除に失敗しました。')
       } finally {
         setBusy(false)
       }
@@ -77,15 +77,15 @@ export function MergeScreen() {
       <div className="screen">
         <h1 className="screen__title">統合しました</h1>
         <ul className="result-list">
-          <li>{result.added} 枚を取り込みました.</li>
-          {result.skipped > 0 && <li>完全一致のカード {result.skipped} 枚を除きました.</li>}
+          <li>{result.added} 枚を取り込みました。</li>
+          {result.skipped > 0 && <li>完全一致のカード {result.skipped} 枚を除きました。</li>}
         </ul>
 
         {/* 取り込んだ結果を見てから決められるよう, 統合元の扱いはここで尋ねる (specs.md §4.9.2) */}
         {leftovers.length > 0 && sourceDecision === 'pending' && (
           <section className="section">
             <h2 className="section__title">統合元のセットはどうしますか?</h2>
-            <p className="note">{leftovers.map((source) => source.name).join(', ')}</p>
+            <p className="note">{leftovers.map((source) => source.name).join('、')}</p>
             <div className="form__actions">
               <button
                 type="button"
@@ -106,15 +106,18 @@ export function MergeScreen() {
             </div>
           </section>
         )}
-        {sourceDecision === 'kept' && <p className="note">統合元のセットは残しました.</p>}
+        {sourceDecision === 'kept' && <p className="note">統合元のセットは残しました。</p>}
         {sourceDecision === 'deleted' && (
-          <p className="note">統合元の {leftovers.length} 件を削除しました.</p>
+          <p className="note">統合元の {leftovers.length} 件を削除しました。</p>
         )}
         {error !== null && <p className="alert">{error}</p>}
 
         <div className="form__actions form__actions--stack">
           <Link className="btn btn--primary btn--large" to={`/sets/${result.setId}`}>
             統合したセットを開く
+          </Link>
+          <Link className="btn" to="/">
+            ホームへ戻る
           </Link>
         </div>
       </div>
@@ -126,7 +129,7 @@ export function MergeScreen() {
   if (current === undefined) {
     return (
       <div className="screen">
-        <p className="empty">この学習セットは見つかりませんでした.</p>
+        <p className="empty">この学習セットは見つかりませんでした。</p>
         <Link className="btn" to="/">
           ホームへ戻る
         </Link>
@@ -154,7 +157,7 @@ export function MergeScreen() {
           <div>
             <h1 className="screen__title">セットを統合</h1>
             <p className="screen__desc">
-              統合するセットを選んでください. 選んだ順に番号が付き, その順にカードが並びます.
+              統合するセットを選んでください。選んだ順に番号が付き、その順にカードが並びます。
             </p>
           </div>
           <div className="screen__actions">
@@ -237,7 +240,7 @@ export function MergeScreen() {
       )
       setResult(merged)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '統合に失敗しました.')
+      setError(cause instanceof Error ? cause.message : '統合に失敗しました。')
     } finally {
       setBusy(false)
     }
@@ -256,7 +259,7 @@ export function MergeScreen() {
 
       <section className="section">
         <h2 className="section__title">並び順</h2>
-        <p className="note">この順にカードが並びます. 右のつまみをドラッグして入れ替えられます.</p>
+        <p className="note">この順にカードが並びます。右のつまみをドラッグして入れ替えられます。光った線の位置に入ります。</p>
         <ol className="order-list">
           {selected.map((id, index) => {
             const set = setById.get(id)
@@ -264,7 +267,18 @@ export function MergeScreen() {
             return (
               <li
                 key={id}
-                className={`order-row ${dragIndex === index ? 'order-row--dragging' : ''}`}
+                className={[
+                  'order-row',
+                  dragIndex === index ? 'order-row--dragging' : '',
+                  // 挿入先の目印。この行の上に入る
+                  insertIndex === index ? 'order-row--insert' : '',
+                  // 末尾に入る場合は最後の行の下に出す
+                  insertIndex === selected.length && index === selected.length - 1
+                    ? 'order-row--insert-end'
+                    : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
                 {...{ [ORDER_ATTRIBUTE]: index }}
               >
                 <span className="pick-num">{index + 1}</span>
@@ -347,7 +361,7 @@ export function MergeScreen() {
               </select>
             </label>
             <p className="note">
-              追記先のカードは今の並びのまま先頭に残り, 他のセットが番号の順に後ろへ続きます.
+              追記先のカードは今の並びのまま先頭に残り、他のセットが番号の順に後ろへ続きます。
             </p>
           </div>
         )}
@@ -363,8 +377,8 @@ export function MergeScreen() {
           />
         </div>
         <p className="note">
-          取り込んだカードの進捗は未学習から始まります. 画像と数式の設定は, どれか1つで有効なら有効になります.
-          統合元のセットを削除するかどうかは, 統合したあとに尋ねます.
+          取り込んだカードの進捗は未学習から始まります。画像と数式の設定は、どれか1つで有効なら有効になります。
+          統合元のセットを削除するかどうかは、統合したあとに尋ねます。
         </p>
       </section>
 

@@ -42,9 +42,9 @@ interface Decision {
 }
 
 const EMPTY_MESSAGE: Record<EmptyReason, string> = {
-  'no-cards': 'このセットにはカードがありません.',
-  'no-starred': '★を付けたカードがありません. 「★のみ」を外すか, カードに★を付けてください.',
-  'all-known': 'すべてのカードが習得済です. 「最初からやり直す」で進捗を戻せます.',
+  'no-cards': 'このセットにはカードがありません。',
+  'no-starred': '★を付けたカードがありません。「★のみ」を外すか、カードに★を付けてください。',
+  'all-known': 'すべてのカードが習得済です。「最初からやり直す」で進捗を戻せます。',
 }
 
 /** S5 暗記モード + S7 結果 (specs.md §3, §4.6) */
@@ -406,7 +406,7 @@ export function StudyScreen() {
   if (phase.kind === 'missing' || set === null || options === null) {
     return (
       <div className="screen">
-        <p className="empty">この学習セットは見つかりませんでした.</p>
+        <p className="empty">この学習セットは見つかりませんでした。</p>
         <Link className="btn" to="/">
           ホームへ戻る
         </Link>
@@ -754,7 +754,7 @@ export function StudyScreen() {
             starredCount={starredCount}
             idPrefix="study-live"
           />
-          <p className="note">変更はすぐに反映されます. これまでの判定は残ります.</p>
+          <p className="note">変更はすぐに反映されます。これまでの判定は残ります。</p>
           <div className="form__actions">
             <button
               type="button"
@@ -831,14 +831,14 @@ function ResultView({
       {options.trackProgress ? (
         allKnown ? (
           <p className="note">
-            対象のカードをすべて習得しました. お疲れさまでした.
+            対象のカードをすべて習得しました。お疲れさまでした。
           </p>
         ) : (
-          <p className="note">学習中のカードが {remainingLearning} 枚残っています.</p>
+          <p className="note">学習中のカードが {remainingLearning} 枚残っています。</p>
         )
       ) : (
         <p className="note">
-          進み具合を把握しない設定のため, 今回の判定は保存していません.
+          進み具合を把握しない設定のため、今回の判定は保存していません。
         </p>
       )}
 

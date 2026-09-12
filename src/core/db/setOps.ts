@@ -105,7 +105,7 @@ export interface CopySetOptions {
 export async function copySet(setId: string, options: CopySetOptions): Promise<string> {
   return db.transaction('rw', SCOPE, async () => {
     const source = await db.sets.get(setId)
-    if (source === undefined) throw new Error('コピー元のセットが見つかりません.')
+    if (source === undefined) throw new Error('コピー元のセットが見つかりません。')
     const now = Date.now()
     // ★ (カードの属性) とリッチコンテンツ設定, 学習オプションはそのまま引き継ぐ
     const copy: StudySet = {
@@ -159,14 +159,14 @@ export interface MergeResult {
  * 取り込んだカードの進捗は未学習から始める (§4.9.2, §9.2 D3).
  */
 export async function mergeSets(options: MergeOptions): Promise<MergeResult> {
-  if (options.sourceIds.length < 2) throw new Error('統合するセットを2つ以上選んでください.')
+  if (options.sourceIds.length < 2) throw new Error('統合するセットを2つ以上選んでください。')
 
   return db.transaction('rw', SCOPE, async () => {
     const now = Date.now()
     const found = await db.sets.bulkGet([...options.sourceIds])
     const sources = found.filter((set): set is StudySet => set !== undefined)
     if (sources.length !== options.sourceIds.length) {
-      throw new Error('統合元のセットが見つかりません.')
+      throw new Error('統合元のセットが見つかりません。')
     }
 
     let target: StudySet
@@ -185,7 +185,7 @@ export async function mergeSets(options: MergeOptions): Promise<MergeResult> {
       await db.sets.add(target)
     } else {
       const existing = await db.sets.get(options.destination.setId)
-      if (existing === undefined) throw new Error('統合先のセットが見つかりません.')
+      if (existing === undefined) throw new Error('統合先のセットが見つかりません。')
       target = existing
     }
 
@@ -297,10 +297,10 @@ export interface SplitResult {
 export async function splitSet(options: SplitOptions): Promise<SplitResult> {
   return db.transaction('rw', SCOPE, async () => {
     const source = await db.sets.get(options.setId)
-    if (source === undefined) throw new Error('分割するセットが見つかりません.')
+    if (source === undefined) throw new Error('分割するセットが見つかりません。')
     const cards = await listCards(source.id)
     const groups = planSplit(source.name, cards, options.rule)
-    if (groups.length === 0) throw new Error('切り出すカードがありません.')
+    if (groups.length === 0) throw new Error('切り出すカードがありません。')
 
     const now = Date.now()
     let order = nextOrder(await listSetsInFolder(options.folderId))
@@ -357,7 +357,7 @@ export async function copyFolder(folderId: string): Promise<string> {
   return db.transaction('rw', [db.folders, ...SCOPE], async () => {
     const folders = await db.folders.toArray()
     const root = folders.find((folder) => folder.id === folderId)
-    if (root === undefined) throw new Error('コピー元のフォルダが見つかりません.')
+    if (root === undefined) throw new Error('コピー元のフォルダが見つかりません。')
 
     const now = Date.now()
     const subtreeIds = collectSubtreeIds(folders, folderId)

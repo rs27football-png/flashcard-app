@@ -106,7 +106,7 @@ export function FolderSheet({
       </ul>
 
       {childFolders.length === 0 && childSets.length === 0 && (
-        <p className="sheet-empty">このフォルダは空です.</p>
+        <p className="sheet-empty">このフォルダは空です。</p>
       )}
     </Modal>
   )

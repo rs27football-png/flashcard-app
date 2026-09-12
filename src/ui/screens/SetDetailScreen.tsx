@@ -13,12 +13,11 @@ import {
 import { resetProgress } from '../../core/db/progress'
 import { normalizeQuizOptions, normalizeStudyOptions } from '../../core/study/options'
 import { Breadcrumb } from '../components/Breadcrumb'
-import { CopySetDialog } from '../components/CopySetDialog'
 import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
 import { ProgressBar } from '../components/ProgressBar'
 import { QuizOptionsForm } from '../components/QuizOptionsForm'
-import { SetActionsSheet } from '../components/SetActionsSheet'
+import { SetActions } from '../components/SetActions'
 import { StudyOptionsForm } from '../components/StudyOptionsForm'
 
 const EMPTY_SUMMARY: ProgressSummary = { total: 0, known: 0, learning: 0, unseen: 0 }
@@ -32,7 +31,6 @@ export function SetDetailScreen() {
   const [quizOptions, setQuizOptions] = useState<QuizOptions | null>(null)
   const [confirmingReset, setConfirmingReset] = useState(false)
   const [showActions, setShowActions] = useState(false)
-  const [copying, setCopying] = useState(false)
 
   // 不在を null で返す. undefined のままだと「読み込み中」と区別できないため.
   const set = useLiveQuery(async () => (await getSet(setId)) ?? null, [setId])
@@ -69,7 +67,7 @@ export function SetDetailScreen() {
   if (set === null) {
     return (
       <div className="screen">
-        <p className="empty">この学習セットは見つかりませんでした.</p>
+        <p className="empty">この学習セットは見つかりませんでした。</p>
         <Link className="btn" to="/">
           ホームへ戻る
         </Link>
@@ -94,8 +92,8 @@ export function SetDetailScreen() {
           {set.description !== '' && <p className="screen__desc">{set.description}</p>}
         </div>
         {/*
-          使う頻度の低い編集と設定は, アイコンだけにしてセット名の横へ寄せる.
-          役割の違うボタンが縦に詰まって並ぶのを避け, 学習の開始ボタンを主役にするため.
+          使う頻度の低い編集と設定は、アイコンだけにしてセット名の横へ寄せる。
+          役割の違うボタンが縦に詰まって並ぶのを避け、学習の開始ボタンを主役にするため。
           インポートへの導線はカード編集画面に集約している (specs.md §4.3)
         */}
         <div className="set-head__tools">
@@ -106,14 +104,6 @@ export function SetDetailScreen() {
             title="カードを編集"
           >
             <Icon name="edit" size={19} />
-          </Link>
-          <Link
-            className="btn btn--tool"
-            to={`/sets/${set.id}/settings`}
-            aria-label="セット設定"
-            title="セット設定"
-          >
-            <Icon name="settings" size={19} />
           </Link>
           {/* コピー・統合・分割 (specs.md §4.9) */}
           <button
@@ -184,8 +174,8 @@ export function SetDetailScreen() {
       {visibleCards.length === 0 ? (
         <p className="empty">
           {cards.length === 0
-            ? 'カードがありません. セット名の横の鉛筆ボタン (カードを編集) から追加してください.'
-            : '★を付けたカードはありません.'}
+            ? 'カードがありません。セット名の横の鉛筆ボタン (カードを編集) から追加してください。'
+            : '★を付けたカードはありません。'}
         </p>
       ) : (
         <ul className="cards">
@@ -301,23 +291,16 @@ export function SetDetailScreen() {
       </Modal>
 
       {showActions && (
-        <SetActionsSheet
-          set={set}
-          onClose={() => setShowActions(false)}
-          onCopy={() => setCopying(true)}
-        />
-      )}
-
-      {copying && (
-        <CopySetDialog
+        <SetActions
           set={set}
           folders={folders}
-          onClose={() => setCopying(false)}
+          onClose={() => setShowActions(false)}
           onCopied={(newSetId) => {
-            setCopying(false)
-            // 詳細からのコピーは, 作ったセットを開いて手を入れやすくする
+            setShowActions(false)
+            // 詳細からのコピーは、作ったセットを開いて手を入れやすくする
             navigate(`/sets/${newSetId}`)
           }}
+          onDeleted={() => navigate('/', { replace: true })}
         />
       )}
     </div>

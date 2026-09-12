@@ -85,7 +85,7 @@ export function ImportScreen() {
       )
       navigate(`/sets/${targetId}`)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '取り込みに失敗しました.')
+      setError(cause instanceof Error ? cause.message : '取り込みに失敗しました。')
       setRunning(false)
     }
   }
@@ -219,8 +219,8 @@ export function ImportScreen() {
         {parsed.cards.length === 0 ? (
           <p className="note">
             {text.trim() === ''
-              ? 'テキストを貼り付けると, ここに取り込み結果が表示されます.'
-              : 'カードを取り出せませんでした. 区切り文字の指定を確認してください.'}
+              ? 'テキストを貼り付けると、ここに取り込み結果が表示されます。'
+              : 'カードを取り出せませんでした。区切り文字の指定を確認してください。'}
           </p>
         ) : (
           <>
@@ -234,8 +234,8 @@ export function ImportScreen() {
             </p>
             {parsed.missingDefinitionCount > 0 && (
               <p className="alert">
-                定義が空の行が {parsed.missingDefinitionCount} 件あります.
-                区切り文字が現れなかった行です.
+                定義が空の行が {parsed.missingDefinitionCount} 件あります。
+                区切り文字が現れなかった行です。
               </p>
             )}
             <div className="table-wrap">

@@ -155,3 +155,24 @@ export async function moveSet(setId: string, folderId: string | null): Promise<v
 export async function updateQuizOptions(setId: string, quizOptions: QuizOptions): Promise<void> {
   await db.sets.update(setId, { quizOptions })
 }
+
+/** 名前だけを変える。⋯ メニューからの素早い変更に用いる (specs.md §4.2) */
+export async function renameSet(setId: string, name: string): Promise<void> {
+  await db.sets.update(setId, { name: name.trim(), updatedAt: Date.now() })
+}
+
+/**
+ * セットの名前と説明を更新する (specs.md §4.2)。
+ * セットの中身を直す操作としてカード編集画面 (S3) から呼ぶ。
+ */
+export async function updateSetInfo(
+  setId: string,
+  name: string,
+  description: string,
+): Promise<void> {
+  await db.sets.update(setId, {
+    name: name.trim(),
+    description: description.trim(),
+    updatedAt: Date.now(),
+  })
+}
