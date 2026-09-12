@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { useGoBack } from '../hooks/useGoBack'
 import { useLiveQuery } from 'dexie-react-hooks'
 import type { Card, Folder } from '../../core/types'
 import { listCards } from '../../core/db/cards'
@@ -20,6 +21,7 @@ interface Done {
 /** 学習セットの分割 (specs.md §4.9.3) */
 export function SplitScreen() {
   const { setId = '' } = useParams<{ setId: string }>()
+  const goBack = useGoBack(`/sets/${setId}`)
   const set = useLiveQuery(async () => (await getSet(setId)) ?? null, [setId])
   const cards = useLiveQuery(() => listCards(setId), [setId], [] as Card[])
   const folders = useLiveQuery(() => listFolders(), [], [] as Folder[])
@@ -136,9 +138,9 @@ export function SplitScreen() {
           </p>
         </div>
         <div className="screen__actions">
-          <Link className="btn" to={`/sets/${setId}`}>
+          <button type="button" className="btn" onClick={goBack}>
             戻る
-          </Link>
+          </button>
         </div>
       </header>
 

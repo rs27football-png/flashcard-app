@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useGoBack } from '../hooks/useGoBack'
 import { useLiveQuery } from 'dexie-react-hooks'
 import type { Card, Folder, StudySet } from '../../core/types'
 import { listAllCards } from '../../core/db/cards'
@@ -40,6 +41,7 @@ function folderOptions(folders: readonly Folder[], parentId: string | null, dept
 
 /** S8 検索. 全セット横断の全文検索 (specs.md §3, §4.10) */
 export function SearchScreen() {
+  const goBack = useGoBack()
   // 画面を開いている間は全カードを手元に持ち, 入力のたびに IndexedDB を読み直さない
   const cards = useLiveQuery(() => listAllCards(), [], [] as Card[])
   const sets = useLiveQuery(() => listAllSets(), [], [] as StudySet[])
@@ -79,9 +81,9 @@ export function SearchScreen() {
       <header className="screen__head">
         <h1 className="screen__title">検索</h1>
         <div className="screen__actions">
-          <Link className="btn" to="/">
-            ホームへ戻る
-          </Link>
+          <button type="button" className="btn" onClick={goBack}>
+            戻る
+          </button>
         </div>
       </header>
 

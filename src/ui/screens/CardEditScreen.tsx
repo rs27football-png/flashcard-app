@@ -17,6 +17,7 @@ import { getSet, updateSetInfo } from '../../core/db/sets'
 import { Breadcrumb } from '../components/Breadcrumb'
 import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
+import { useGoBack } from '../hooks/useGoBack'
 import { ORDER_ATTRIBUTE, useReorderDrag } from '../hooks/useReorderDrag'
 
 const EMPTY_INPUT: CardInput = { term: '', definition: '', hint: '' }
@@ -24,6 +25,7 @@ const EMPTY_INPUT: CardInput = { term: '', definition: '', hint: '' }
 /** S3 カード編集. 追加 / 更新 / 削除 / 並べ替え (specs.md §3, §4.3) */
 export function CardEditScreen() {
   const { setId = '' } = useParams<{ setId: string }>()
+  const goBack = useGoBack(`/sets/${setId}`)
   const set = useLiveQuery(async () => (await getSet(setId)) ?? null, [setId])
   const folders = useLiveQuery(() => listFolders(), [], [] as Folder[])
   const cards = useLiveQuery(() => listCards(setId), [setId], [] as Card[])
@@ -234,9 +236,9 @@ export function CardEditScreen() {
       <header className="screen__head">
         <h1 className="screen__title">カードを編集</h1>
         <div className="screen__actions">
-          <Link className="btn" to={`/sets/${set.id}`}>
+          <button type="button" className="btn" onClick={goBack}>
             戻る
-          </Link>
+          </button>
           <button type="button" className="btn btn--save" onClick={() => void saveNow()}>
             <Icon name="check" />
             保存
