@@ -20,7 +20,7 @@ import { Modal } from '../components/Modal'
 
 const EMPTY_INPUT: CardInput = { term: '', definition: '', hint: '' }
 
-/** S3 カード編集. 追加 / 更新 / 削除 / 並べ替え ( specs.md §3, §4.3 ) */
+/** S3 カード編集. 追加 / 更新 / 削除 / 並べ替え (specs.md §3, §4.3) */
 export function CardEditScreen() {
   const { setId = '' } = useParams<{ setId: string }>()
   const set = useLiveQuery(async () => (await getSet(setId)) ?? null, [setId])
@@ -82,7 +82,7 @@ export function CardEditScreen() {
         await updateCard(editingId, values)
       }
       resetForm()
-      // 連続追加を想定し, 保存後は入力欄をクリアして同じ画面に留まる ( specs.md §4.3 )
+      // 連続追加を想定し, 保存後は入力欄をクリアして同じ画面に留まる (specs.md §4.3)
       termRef.current?.focus()
       return true
     } catch (cause) {
@@ -160,7 +160,7 @@ export function CardEditScreen() {
           <Link className="btn" to={`/sets/${set.id}`}>
             戻る
           </Link>
-          {/* カードを増やす操作をこの画面に集約する ( specs.md §4.3 ) */}
+          {/* カードを増やす操作をこの画面に集約する (specs.md §4.3) */}
           <Link className="btn btn--primary" to={`/import?setId=${set.id}`}>
             <Icon name="import" />
             インポート
@@ -186,7 +186,7 @@ export function CardEditScreen() {
           event.preventDefault()
           void submit()
         }}
-        // Ctrl + Enter で保存する ( specs.md §5.3 ). textarea 内でも効くよう form 側で拾う.
+        // Ctrl + Enter で保存する (specs.md §5.3). textarea 内でも効くよう form 側で拾う.
         // 変換確定の Enter を拾わないよう, 変換中は無視する.
         onKeyDown={(event) => {
           if (composingRef.current) return
@@ -201,7 +201,7 @@ export function CardEditScreen() {
         </h2>
 
         <label className="field">
-          <span className="field__label">用語 ( 表 )</span>
+          <span className="field__label">用語 (表)</span>
           <textarea
             ref={termRef}
             className="input"
@@ -213,7 +213,7 @@ export function CardEditScreen() {
         </label>
 
         <label className="field">
-          <span className="field__label">定義 ( 裏 )</span>
+          <span className="field__label">定義 (裏)</span>
           <textarea
             className="input"
             rows={3}
@@ -224,7 +224,7 @@ export function CardEditScreen() {
         </label>
 
         <label className="field">
-          <span className="field__label">ヒント ( 任意 )</span>
+          <span className="field__label">ヒント (任意)</span>
           <input
             className="input"
             value={input.hint}
@@ -338,7 +338,7 @@ export function CardEditScreen() {
         {pendingDelete !== null && (
           <div className="form">
             <p>
-              「{pendingDelete.term === '' ? '( 用語なし )' : pendingDelete.term}」を削除します。
+              「{pendingDelete.term === '' ? '(用語なし)' : pendingDelete.term}」を削除します。
               このカードの進捗も一緒に削除されます。
             </p>
             <div className="form__actions">

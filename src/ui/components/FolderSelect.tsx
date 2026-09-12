@@ -45,7 +45,7 @@ export function FolderSelect({
         onChange(event.target.value === ROOT_VALUE ? null : event.target.value)
       }
     >
-      <option value={ROOT_VALUE}>( ルート )</option>
+      <option value={ROOT_VALUE}>(ルート)</option>
       {options.map((option) => (
         <option key={option.id} value={option.id}>
           {option.label}

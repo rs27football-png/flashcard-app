@@ -17,7 +17,7 @@ interface Done {
   sourceName: string
 }
 
-/** 学習セットの分割 ( specs.md §4.9.3 ) */
+/** 学習セットの分割 (specs.md §4.9.3) */
 export function SplitScreen() {
   const { setId = '' } = useParams<{ setId: string }>()
   const set = useLiveQuery(async () => (await getSet(setId)) ?? null, [setId])
@@ -77,7 +77,7 @@ export function SplitScreen() {
     )
   }
 
-  const name = manualName ?? `${set.name} ( 抜粋 )`
+  const name = manualName ?? `${set.name} (抜粋)`
   const targetFolderId = folderId === undefined ? set.folderId : folderId
   const rule: SplitRule =
     kind === 'count'
@@ -132,7 +132,7 @@ export function SplitScreen() {
         <div>
           <h1 className="screen__title">セットを分割</h1>
           <p className="screen__desc">
-            {set.name} ( {cards.length} 枚 )
+            {set.name} ({cards.length} 枚)
           </p>
         </div>
         <div className="screen__actions">
@@ -161,7 +161,7 @@ export function SplitScreen() {
 
         {kind === 'count' && (
           <label className="field" style={{ marginTop: '0.75rem' }}>
-            <span className="field__label">1つのセットの枚数 ( 今の並び順で区切る )</span>
+            <span className="field__label">1つのセットの枚数 (今の並び順で区切る)</span>
             <input
               className="input input--number"
               type="number"
@@ -225,7 +225,7 @@ export function SplitScreen() {
             <FolderSelect folders={folders} value={targetFolderId} onChange={setFolderId} />
           </label>
           <Toggle
-            label="元のセットから取り除く ( 移動 )"
+            label="元のセットから取り除く (移動)"
             description="オフなら元のセットはそのまま残り, カードを複製する"
             checked={moveCards}
             onChange={setMoveCards}

@@ -1,4 +1,4 @@
-// 全セット横断検索 ( specs.md §4.10 ).
+// 全セット横断検索 (specs.md §4.10).
 import type { Card, StudySet } from '../types'
 import { findMatches, type MatchRange } from './highlight'
 import { normalizeForSearch } from './normalize'
@@ -27,8 +27,8 @@ const EMPTY: SearchResult = { sets: [], cards: [], totalCards: 0 }
 /**
  * 用語・定義・ヒント・学習セット名を検索する.
  *
- * scopeSetIds を渡すと, そのセットに属するものだけを対象にする ( フォルダによる絞り込み ).
- * カードはまず保存時に作った正規化済みの列で絞り込み ( specs.md §2.3, §6.3 ),
+ * scopeSetIds を渡すと, そのセットに属するものだけを対象にする (フォルダによる絞り込み).
+ * カードはまず保存時に作った正規化済みの列で絞り込み (specs.md §2.3, §6.3),
  * 一致箇所の計算は絞り込んだカードに対してだけ行う.
  */
 export function search(

@@ -10,7 +10,7 @@ interface StudyOptionsFormProps {
   idPrefix?: string
 }
 
-/** 学習オプションの入力欄 ( specs.md §2.7 ). 開始前の確認と, 暗記モード中の変更で共用する */
+/** 学習オプションの入力欄 (specs.md §2.7). 開始前の確認と, 暗記モード中の変更で共用する */
 export function StudyOptionsForm({
   value,
   onChange,

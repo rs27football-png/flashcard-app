@@ -37,7 +37,7 @@ type Dialog =
 
 const CLOSED: Dialog = { type: 'none' }
 
-/** S1 ホーム. フォルダツリーと学習セット一覧 ( specs.md §3 ) */
+/** S1 ホーム. フォルダツリーと学習セット一覧 (specs.md §3) */
 export function HomeScreen() {
   const navigate = useNavigate()
   const folders = useLiveQuery(() => listFolders(), [], [] as Folder[])
@@ -137,7 +137,7 @@ export function HomeScreen() {
         </div>
       </header>
 
-      {/* 検索への入口 ( specs.md §3 S1, §4.10 ) */}
+      {/* 検索への入口 (specs.md §3 S1, §4.10) */}
       <Link to="/search" className="search-entry">
         <Icon name="search" />
         用語・定義・セット名を検索
@@ -200,7 +200,7 @@ export function HomeScreen() {
             className={`drop-root ${drag.overFolderId === null ? 'drop-root--over' : ''}`}
           >
             <Icon name="folder" />
-            ここへ落とすとルート ( 最上位 ) へ移動
+            ここへ落とすとルート (最上位) へ移動
           </div>
           {/* 掴んでいるものを指の先に見せる. 下の要素を拾えるよう pointer-events は無効 */}
           <div className="drag-ghost" style={{ left: drag.x, top: drag.y }}>
@@ -250,7 +250,7 @@ export function HomeScreen() {
               className="menu__item"
               onClick={() => void handleCopyFolder(dialog.folder)}
             >
-              フォルダをコピー ( 中身ごと )
+              フォルダをコピー (中身ごと)
             </button>
             <button
               type="button"
@@ -364,7 +364,7 @@ interface FolderNodeProps {
   onAddSet: (folderId: string) => void
   onAddFolder: (parentId: string) => void
   onGrip: (event: React.PointerEvent, setId: string, label: string) => void
-  /** 学習セットの行の ⋯ ( specs.md §4.9 ) */
+  /** 学習セットの行の ⋯ (specs.md §4.9) */
   onSetMenu: (set: StudySet) => void
 }
 
@@ -521,7 +521,7 @@ function SetRow({
           <span className="row__label">{set.name}</span>
           <span className="row__meta">{cardCount} 枚</span>
         </Link>
-        {/* 詳細を開かずにコピー・統合・分割できるようにする ( specs.md §4.9 ) */}
+        {/* 詳細を開かずにコピー・統合・分割できるようにする (specs.md §4.9) */}
         <button
           type="button"
           className="btn btn--icon"
@@ -639,7 +639,7 @@ function MoveFolderForm({
     >
       <label className="field">
         <span className="field__label">移動先</span>
-        {/* 自身とその配下は循環参照になるため, そもそも選択肢に出さない ( specs.md §4.1 ) */}
+        {/* 自身とその配下は循環参照になるため, そもそも選択肢に出さない (specs.md §4.1) */}
         <FolderSelect
           folders={folders}
           value={parent}
@@ -673,7 +673,7 @@ function DeleteFolderBody({
         「{folder.name}」を削除します。
         {isEmpty
           ? 'このフォルダは空です。'
-          : `配下に下位フォルダ ${contents.folderCount} 件, 学習セット ${contents.setCount} 件 ( カード ${contents.cardCount} 枚 ) があります。`}
+          : `配下に下位フォルダ ${contents.folderCount} 件, 学習セット ${contents.setCount} 件 (カード ${contents.cardCount} 枚) があります。`}
       </p>
       {isEmpty ? (
         <div className="form__actions">
@@ -745,7 +745,7 @@ function CreateSetForm({
         />
       </label>
       <label className="field">
-        <span className="field__label">説明 ( 任意 )</span>
+        <span className="field__label">説明 (任意)</span>
         <textarea
           className="input"
           rows={2}

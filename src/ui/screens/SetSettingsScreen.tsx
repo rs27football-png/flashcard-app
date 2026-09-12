@@ -8,7 +8,7 @@ import { Breadcrumb } from '../components/Breadcrumb'
 import { FolderSelect } from '../components/FolderSelect'
 import { Modal } from '../components/Modal'
 
-/** S10 セット設定. 名称・説明・所属フォルダ ( specs.md §3, §4.2 ) */
+/** S10 セット設定. 名称・説明・所属フォルダ (specs.md §3, §4.2) */
 export function SetSettingsScreen() {
   const { setId = '' } = useParams<{ setId: string }>()
   const set = useLiveQuery(async () => (await getSet(setId)) ?? null, [setId])
@@ -62,7 +62,7 @@ function SetSettingsForm({ set, folders }: { set: StudySet; folders: readonly Fo
         <h1 className="screen__title">セット設定</h1>
         <div className="screen__actions">
           <Link className="btn" to={`/sets/${set.id}`}>
-            セット詳細へ戻る
+            戻る
           </Link>
         </div>
       </header>
@@ -89,7 +89,7 @@ function SetSettingsForm({ set, folders }: { set: StudySet; folders: readonly Fo
         </label>
 
         <label className="field">
-          <span className="field__label">説明 ( 任意 )</span>
+          <span className="field__label">説明 (任意)</span>
           <textarea
             className="input"
             rows={3}
@@ -125,7 +125,7 @@ function SetSettingsForm({ set, folders }: { set: StudySet; folders: readonly Fo
       <section className="section">
         <h2 className="section__title">リッチコンテンツ</h2>
         <p className="note">
-          画像と数式の有効化は段階6で追加します ( specs.md §4.4 ).
+          画像と数式の有効化は段階6で追加します (specs.md §4.4).
         </p>
       </section>
 

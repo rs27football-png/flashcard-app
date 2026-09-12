@@ -21,7 +21,7 @@ type Phase =
   | { kind: 'quiz' }
   | { kind: 'result' }
 
-/** 1問ぶんの解答. 結果画面の誤答一覧に用いる ( specs.md §4.7.4 ) */
+/** 1問ぶんの解答. 結果画面の誤答一覧に用いる (specs.md §4.7.4) */
 interface AnswerRecord {
   question: QuizQuestion
   /** 選んだ選択肢の文言. パスなら null */
@@ -43,7 +43,7 @@ function formatDuration(ms: number): string {
   return minutes === 0 ? `${seconds}秒` : `${minutes}分${seconds}秒`
 }
 
-/** S6 4択モード + S7 結果 ( specs.md §3, §4.7 ) */
+/** S6 4択モード + S7 結果 (specs.md §3, §4.7) */
 export function QuizScreen() {
   const { setId = '' } = useParams<{ setId: string }>()
   const navigate = useNavigate()
@@ -52,7 +52,7 @@ export function QuizScreen() {
   const [set, setSet] = useState<StudySet | null>(null)
   const [cards, setCards] = useState<Card[]>([])
   const [options, setOptions] = useState<QuizOptions | null>(null)
-  /** 4択の結果を進捗に反映するか ( specs.md §2.8 ). 設定画面ができるまでは既定値 */
+  /** 4択の結果を進捗に反映するか (specs.md §2.8). 設定画面ができるまでは既定値 */
   const [affectsProgress, setAffectsProgress] = useState(true)
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
   const [index, setIndex] = useState(0)
@@ -126,7 +126,7 @@ export function QuizScreen() {
         ...previous,
         { question, chosen: picked?.text ?? null, correct },
       ])
-      // 1回の正答で習得済, 誤答とパスで学習中 ( specs.md §4.7.3 )
+      // 1回の正答で習得済, 誤答とパスで学習中 (specs.md §4.7.3)
       if (affectsProgress) void recordQuizAnswer(question.cardId, correct)
     },
     [question, selected, affectsProgress],
@@ -143,7 +143,7 @@ export function QuizScreen() {
     setSelected(null)
   }, [selected, index, questions.length])
 
-  // キーボード操作 ( specs.md §5.2 ).
+  // キーボード操作 (specs.md §5.2).
   // 暗記モードと同じく, 購読は出題中に1回だけ張り, 中身は最新の処理を参照する.
   // 依存が変わるたびに張り替えると, 張り替えの合間の入力を取りこぼすため.
   const handleKeyRef = useRef<(event: KeyboardEvent) => void>(() => {})
@@ -241,7 +241,7 @@ export function QuizScreen() {
   return (
     <div className="screen quiz">
       <header className="quiz__head">
-        {/* 進捗は「現在の問題番号 / 総問題数」で示す ( specs.md §4.7.3 ) */}
+        {/* 進捗は「現在の問題番号 / 総問題数」で示す (specs.md §4.7.3) */}
         <span className="quiz__count">
           問題 <strong>{index + 1}</strong> / {total}
         </span>
@@ -255,7 +255,7 @@ export function QuizScreen() {
         <span style={{ width: `${((index + (answered ? 1 : 0)) / total) * 100}%` }} />
       </div>
 
-      {/* 除外した枚数は開始時に示す ( specs.md §4.7.2 ) */}
+      {/* 除外した枚数は開始時に示す (specs.md §4.7.2) */}
       {index === 0 && !answered && skippedTotal > 0 && (
         <p className="note">
           {skipped.empty > 0 && `答えが空のカード ${skipped.empty} 枚を除きました. `}
@@ -273,7 +273,7 @@ export function QuizScreen() {
 
           <ol className="choices">
             {question.choices.map((choice, choiceIndex) => {
-              // 誤答時は, 選んだものを赤, 正答を緑で併せて示す ( specs.md §4.7.3 )
+              // 誤答時は, 選んだものを赤, 正答を緑で併せて示す (specs.md §4.7.3)
               const state = !answered
                 ? ''
                 : choice.correct
@@ -317,7 +317,7 @@ export function QuizScreen() {
             </div>
           ) : (
             <div className="quiz__pass">
-              {/* パスは正答を表示したうえで誤答として扱う ( specs.md §4.7.3 ) */}
+              {/* パスは正答を表示したうえで誤答として扱う (specs.md §4.7.3) */}
               <button type="button" className="btn btn--small" onClick={() => choose('pass')}>
                 分かりませんか?
               </button>
@@ -341,7 +341,7 @@ interface QuizResultProps {
   onRepeat: () => void
 }
 
-/** 4択の結果 ( specs.md §4.7.4 ) */
+/** 4択の結果 (specs.md §4.7.4) */
 function QuizResult({ set, answers, durationMs, onRetryWrong, onRepeat }: QuizResultProps) {
   const total = answers.length
   const correct = answers.filter((record) => record.correct).length
@@ -360,7 +360,7 @@ function QuizResult({ set, answers, durationMs, onRetryWrong, onRepeat }: QuizRe
       <div className="result">
         <div className="result__tile result__tile--known">
           <span className="result__num">{rate}%</span>
-          正答率 ( {correct} / {total} 問 )
+          正答率 ({correct} / {total} 問)
         </div>
         <div className="result__tile">
           <span className="result__num">{formatDuration(durationMs)}</span>
@@ -372,7 +372,7 @@ function QuizResult({ set, answers, durationMs, onRetryWrong, onRepeat }: QuizRe
         <p className="note">全問正解です. お疲れさまでした.</p>
       ) : (
         <section className="section">
-          <h2 className="section__title">間違えた問題 ( {wrong.length} 問 )</h2>
+          <h2 className="section__title">間違えた問題 ({wrong.length} 問)</h2>
           <ul className="wrong-list">
             {wrong.map((record, recordIndex) => (
               <li key={recordIndex} className="wrong-item">

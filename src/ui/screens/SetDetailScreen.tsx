@@ -23,7 +23,7 @@ import { StudyOptionsForm } from '../components/StudyOptionsForm'
 
 const EMPTY_SUMMARY: ProgressSummary = { total: 0, known: 0, learning: 0, unseen: 0 }
 
-/** S2 セット詳細. カード一覧と進捗サマリ ( specs.md §3, §4.2 ) */
+/** S2 セット詳細. カード一覧と進捗サマリ (specs.md §3, §4.2) */
 export function SetDetailScreen() {
   const { setId = '' } = useParams<{ setId: string }>()
   const navigate = useNavigate()
@@ -40,7 +40,7 @@ export function SetDetailScreen() {
   const cards = useLiveQuery(() => listCards(setId), [setId], [] as Card[])
   const summary = useLiveQuery(() => getProgressSummary(setId), [setId], EMPTY_SUMMARY)
 
-  // 検索結果から来たときは, 該当のカードまで送って一時的に強調する ( specs.md §4.10 )
+  // 検索結果から来たときは, 該当のカードまで送って一時的に強調する (specs.md §4.10)
   const [searchParams] = useSearchParams()
   const focusCardId = searchParams.get('card')
   // 送るのは来たときの1回だけ. ★の切り替えなどで一覧が更新されるたびに引き戻さない
@@ -96,7 +96,7 @@ export function SetDetailScreen() {
         {/*
           使う頻度の低い編集と設定は, アイコンだけにしてセット名の横へ寄せる.
           役割の違うボタンが縦に詰まって並ぶのを避け, 学習の開始ボタンを主役にするため.
-          インポートへの導線はカード編集画面に集約している ( specs.md §4.3 )
+          インポートへの導線はカード編集画面に集約している (specs.md §4.3)
         */}
         <div className="set-head__tools">
           <Link
@@ -115,7 +115,7 @@ export function SetDetailScreen() {
           >
             <Icon name="settings" size={19} />
           </Link>
-          {/* コピー・統合・分割 ( specs.md §4.9 ) */}
+          {/* コピー・統合・分割 (specs.md §4.9) */}
           <button
             type="button"
             className="btn btn--tool"
@@ -138,7 +138,7 @@ export function SetDetailScreen() {
           <Icon name="play" />
           暗記モード
         </button>
-        {/* 選択肢を作るにはカードが2枚以上要る ( specs.md §4.7.2 ) */}
+        {/* 選択肢を作るにはカードが2枚以上要る (specs.md §4.7.2) */}
         <button
           type="button"
           className="btn btn--primary btn--large"
@@ -155,7 +155,7 @@ export function SetDetailScreen() {
       <section className="set-progress" aria-label="進捗">
         <ProgressBar summary={summary} />
         <div className="set-progress__actions">
-          {/* 「最初からやり直す」( specs.md §4.6.6 ) は結果画面にもあるが,
+          {/* 「最初からやり直す」(specs.md §4.6.6) は結果画面にもあるが,
               ラウンドの途中で戻したい場合のためにここからも辿れるようにする */}
           <button
             type="button"
@@ -184,7 +184,7 @@ export function SetDetailScreen() {
       {visibleCards.length === 0 ? (
         <p className="empty">
           {cards.length === 0
-            ? 'カードがありません. セット名の横の鉛筆ボタン ( カードを編集 ) から追加してください.'
+            ? 'カードがありません. セット名の横の鉛筆ボタン (カードを編集) から追加してください.'
             : '★を付けたカードはありません.'}
         </p>
       ) : (
@@ -253,7 +253,7 @@ export function SetDetailScreen() {
                 type="button"
                 className="btn btn--primary"
                 onClick={() => {
-                  // 次回の既定値として記憶する ( specs.md §2.7 )
+                  // 次回の既定値として記憶する (specs.md §2.7)
                   void updateStudyOptions(set.id, studyOptions).then(() =>
                     navigate(`/sets/${set.id}/study`),
                   )
@@ -287,7 +287,7 @@ export function SetDetailScreen() {
                 type="button"
                 className="btn btn--primary"
                 onClick={() => {
-                  // 次回の既定値として記憶する ( specs.md §2.7 )
+                  // 次回の既定値として記憶する (specs.md §2.7)
                   void updateQuizOptions(set.id, quizOptions).then(() =>
                     navigate(`/sets/${set.id}/quiz`),
                   )

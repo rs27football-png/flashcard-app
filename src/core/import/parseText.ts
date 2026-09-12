@@ -1,4 +1,4 @@
-// テキストインポートの解析 ( specs.md §4.5 ).
+// テキストインポートの解析 (specs.md §4.5).
 // Word / Excel / Google ドキュメントからの貼り付けを想定する.
 
 /** 用語と定義のあいだの区切り */
@@ -14,7 +14,7 @@ export interface ImportOptions {
   cardCustom: string
 }
 
-/** 既定値は Tab 区切り / 改行区切り ( specs.md §4.5 ) */
+/** 既定値は Tab 区切り / 改行区切り (specs.md §4.5) */
 export const DEFAULT_IMPORT_OPTIONS: ImportOptions = {
   termSeparator: 'tab',
   termCustom: '',
@@ -84,7 +84,7 @@ export function parseImportText(text: string, options: ImportOptions): ParseResu
     }
 
     // 区切りが複数あっても最初の1つでのみ分割する.
-    // 「機密性, 完全性, 可用性」のようにカンマを含む定義を壊さないため ( specs.md §4.5 ).
+    // 「機密性, 完全性, 可用性」のようにカンマを含む定義を壊さないため (specs.md §4.5).
     const term = trimmed.slice(0, index).trim()
     const definition = trimmed.slice(index + termSeparator.length).trim()
     if (term === '' && definition === '') continue
@@ -128,7 +128,7 @@ export function findDuplicateFlags(
   })
 }
 
-/** 用語と定義が完全に一致するカードを除外する ( specs.md §4.5 ) */
+/** 用語と定義が完全に一致するカードを除外する (specs.md §4.5) */
 export function excludeDuplicates(
   cards: readonly ParsedCard[],
   existing: readonly { term: string; definition: string }[],

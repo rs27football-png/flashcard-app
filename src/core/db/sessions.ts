@@ -1,7 +1,7 @@
 import type { StudyOptions, StudySession } from '../types'
 import { db } from './db'
 
-/** 中断状態はセットごとに1件だけ保持する ( specs.md §2.6 ) */
+/** 中断状態はセットごとに1件だけ保持する (specs.md §2.6) */
 export function getSession(setId: string): Promise<StudySession | undefined> {
   return db.sessions.get(setId)
 }
@@ -10,7 +10,7 @@ export async function saveSession(session: Omit<StudySession, 'updatedAt'>): Pro
   await db.sessions.put({ ...session, updatedAt: Date.now() })
 }
 
-/** 学習完了時, および「最初からやり直す」実行時に削除する ( specs.md §2.6 ) */
+/** 学習完了時, および「最初からやり直す」実行時に削除する (specs.md §2.6) */
 export async function deleteSession(setId: string): Promise<void> {
   await db.sessions.delete(setId)
 }

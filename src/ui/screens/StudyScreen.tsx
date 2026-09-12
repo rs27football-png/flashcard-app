@@ -18,11 +18,11 @@ import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
 import { StudyOptionsForm } from '../components/StudyOptionsForm'
 
-/** これ以上動かしたら振り分けと見なす距離 ( ピクセル ) */
+/** これ以上動かしたら振り分けと見なす距離 (ピクセル) */
 const SWIPE_THRESHOLD = 80
 /** これ未満の移動はタップと見なし, カードを裏返す */
 const TAP_SLOP = 8
-/** 払ったカードが画面外へ抜けるまでの時間 ( ミリ秒 ). CSS の fly-out と揃える */
+/** 払ったカードが画面外へ抜けるまでの時間 (ミリ秒). CSS の fly-out と揃える */
 const FLY_OUT_MS = 260
 
 type Phase =
@@ -33,7 +33,7 @@ type Phase =
   | { kind: 'study' }
   | { kind: 'result' }
 
-/** 1手ぶんの履歴. ラウンド単位のスタックに積む ( specs.md §4.6.4 ) */
+/** 1手ぶんの履歴. ラウンド単位のスタックに積む (specs.md §4.6.4) */
 interface Decision {
   cardId: string
   known: boolean
@@ -47,7 +47,7 @@ const EMPTY_MESSAGE: Record<EmptyReason, string> = {
   'all-known': 'すべてのカードが習得済です. 「最初からやり直す」で進捗を戻せます.',
 }
 
-/** S5 暗記モード + S7 結果 ( specs.md §3, §4.6 ) */
+/** S5 暗記モード + S7 結果 (specs.md §3, §4.6) */
 export function StudyScreen() {
   const { setId = '' } = useParams<{ setId: string }>()
   const navigate = useNavigate()
@@ -71,7 +71,7 @@ export function StudyScreen() {
   const [confirmingReset, setConfirmingReset] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   // 払ったカードは山から外して別の層で飛ばす. 山を先に次のカードへ進められるので,
-  // 抜けていく札の裏から次の札が現れる見え方になる ( specs.md §4.6.2 ).
+  // 抜けていく札の裏から次の札が現れる見え方になる (specs.md §4.6.2).
   const [flying, setFlying] = useState<{ text: string; direction: 1 | -1; from: number } | null>(
     null,
   )
@@ -203,7 +203,7 @@ export function StudyScreen() {
       const nextStatus: ProgressStatus = known ? 'known' : 'learning'
 
       // trackProgress が false のときは永続化せず, ラウンド内の集計だけを動かす
-      // ( specs.md §4.6.3 )
+      // (specs.md §4.6.3)
       if (options.trackProgress) {
         await setStatus(cardId, nextStatus)
         setProgress((previous) => {
@@ -258,7 +258,7 @@ export function StudyScreen() {
   }, [options, history, queue, index, round, persistSession])
 
   /**
-   * 学習中に設定を変更し, その場で反映する ( specs.md §4.6.2 ).
+   * 学習中に設定を変更し, その場で反映する (specs.md §4.6.2).
    *
    * 判定済みの分の集計と進捗はそのまま残し, まだ提示していない残りだけを
    * 新しい条件で組み直す. 設定を触るたびにラウンドが最初に戻ると流れが切れるため.
@@ -349,7 +349,7 @@ export function StudyScreen() {
     startRound(result.cardIds, 1, options)
   }, [options, cards, setId, startRound])
 
-  // キーボード操作 ( specs.md §5.1 )
+  // キーボード操作 (specs.md §5.1)
   //
   // 中身は判定のたびに作り直されるが, 購読はラウンドのあいだ1回に留める.
   // 依存が変わるたびに購読し直すと, 反映が間に合わない瞬間に古い処理が呼ばれ,
@@ -449,8 +449,8 @@ export function StudyScreen() {
       <div className="screen">
         <h1 className="screen__title">{set.name}</h1>
         <p className="note">
-          前回の続きが残っています ( ラウンド {session.roundNumber} / {session.queue.length} 枚中{' '}
-          {session.currentIndex} 枚まで )。
+          前回の続きが残っています (ラウンド {session.roundNumber} / {session.queue.length} 枚中{' '}
+          {session.currentIndex} 枚まで)。
         </p>
         <div className="form__actions">
           <button
@@ -474,7 +474,7 @@ export function StudyScreen() {
               setQueue(session.queue)
               setIndex(session.currentIndex)
               setRound(session.roundNumber)
-              // 「1つ戻る」の履歴はラウンドを跨いで復元しない ( specs.md §4.6.4 ).
+              // 「1つ戻る」の履歴はラウンドを跨いで復元しない (specs.md §4.6.4).
               // 一方で画面上の件数はラウンド全体を表す必要があるため, 再開前に
               // 判定済みだった分を進捗から数え直して土台に置く.
               setHistory([])
@@ -581,7 +581,7 @@ export function StudyScreen() {
           <Icon name="settings" size={15} />
           設定
         </button>
-        {/* ラウンドの途中でも進捗を戻せるようにする ( specs.md §4.6.6 ) */}
+        {/* ラウンドの途中でも進捗を戻せるようにする (specs.md §4.6.6) */}
         <button
           type="button"
           className="btn btn--small"
@@ -619,7 +619,7 @@ export function StudyScreen() {
               if (startX === null) return
               const delta = event.clientX - startX
               if (Math.abs(delta) >= SWIPE_THRESHOLD) {
-                // 右へ払えば「知っている」, 左へ払えば「学習中」( specs.md §4.6.2 )
+                // 右へ払えば「知っている」, 左へ払えば「学習中」(specs.md §4.6.2)
                 commit(delta > 0)
               } else {
                 setDragX(0)
@@ -786,7 +786,7 @@ interface ResultViewProps {
   onConfirmReset: () => void
 }
 
-/** S7 結果 ( specs.md §4.6.5 ) */
+/** S7 結果 (specs.md §4.6.5) */
 function ResultView({
   set,
   options,

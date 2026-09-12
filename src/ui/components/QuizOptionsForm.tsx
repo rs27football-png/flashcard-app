@@ -10,7 +10,7 @@ interface QuizOptionsFormProps {
   learningCount: number
 }
 
-/** 4択モードの出題オプション ( specs.md §2.7, §4.7.1 ) */
+/** 4択モードの出題オプション (specs.md §2.7, §4.7.1) */
 export function QuizOptionsForm({
   value,
   onChange,
@@ -50,7 +50,7 @@ export function QuizOptionsForm({
               checked={value.front === 'term'}
               onChange={() => onChange({ ...value, front: 'term' })}
             />
-            用語 ( 定義を選ぶ )
+            用語 (定義を選ぶ)
           </label>
           <label className="check">
             <input
@@ -59,7 +59,7 @@ export function QuizOptionsForm({
               checked={value.front === 'definition'}
               onChange={() => onChange({ ...value, front: 'definition' })}
             />
-            定義 ( 用語を選ぶ )
+            定義 (用語を選ぶ)
           </label>
         </div>
       </fieldset>
