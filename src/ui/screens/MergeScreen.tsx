@@ -56,7 +56,12 @@ export function MergeScreen() {
       return next
     })
   }
-  const { dragIndex, insertIndex, start: startReorder } = useReorderDrag(moveTo)
+  const {
+    dragIndex,
+    insertIndex,
+    point: dragPoint,
+    start: startReorder,
+  } = useReorderDrag(moveTo)
 
   // 統合し終えたあとは, 元のセットが消えていても結果を出す
   if (result !== null) {
@@ -394,6 +399,14 @@ export function MergeScreen() {
           {busy ? '統合中…' : `統合する (${incoming} 枚)`}
         </button>
       </div>
+
+      {/* 掴んだセットを指の先に見せる. 下の要素を拾えるよう pointer-events は無効 */}
+      {dragIndex !== null && (
+        <div className="drag-ghost" style={{ left: dragPoint.x, top: dragPoint.y }}>
+          <Icon name="grip" size={14} />
+          {setById.get(selected[dragIndex])?.name ?? ''}
+        </div>
+      )}
     </div>
   )
 }

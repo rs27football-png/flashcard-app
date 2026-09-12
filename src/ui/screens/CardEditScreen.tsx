@@ -82,7 +82,12 @@ export function CardEditScreen() {
       next.map((card) => card.id),
     )
   }
-  const { dragIndex, insertIndex, start: startReorder } = useReorderDrag(moveCardTo)
+  const {
+    dragIndex,
+    insertIndex,
+    point: dragPoint,
+    start: startReorder,
+  } = useReorderDrag(moveCardTo)
 
   const submit = async (): Promise<'added' | 'updated' | 'none'> => {
     // 変換が確定していないうちに保存すると, 未確定の文字列が欄に残る.
@@ -232,24 +237,12 @@ export function CardEditScreen() {
           <Link className="btn" to={`/sets/${set.id}`}>
             戻る
           </Link>
-          {/* カードを増やす操作をこの画面に集約する (specs.md §4.3) */}
-          <Link className="btn btn--primary" to={`/import?setId=${set.id}`}>
-            <Icon name="import" />
-            インポート
-          </Link>
           <button type="button" className="btn btn--save" onClick={() => void saveNow()}>
             <Icon name="check" />
             保存
           </button>
         </div>
       </header>
-
-      {savedNotice !== null && (
-        <p className="save-note" role="status">
-          <Icon name="check" size={16} />
-          {savedNotice}
-        </p>
-      )}
 
       {/* 名前と説明はセットの中身であるため、カードと同じ画面で直せるようにする (specs.md §4.2) */}
       <section className="section">
@@ -290,6 +283,20 @@ export function CardEditScreen() {
       {/* セットの情報とカードの編集を見た目で分ける */}
       <hr className="divider" />
 
+      {/*
+        追加や保存の手応えは, カードの入力欄のすぐ上に出す. 画面の上端に出すと
+        入力中の位置からは見えないためである. 出入りで下の内容がずれないよう,
+        場所は常に空けておく. この余白がセットの情報との区切りも兼ねる.
+      */}
+      <div className="notice-slot" role="status" aria-live="polite">
+        {savedNotice !== null && (
+          <p className="save-note">
+            <Icon name="check" size={16} />
+            {savedNotice}
+          </p>
+        )}
+      </div>
+
       <form
         className="form card-form"
         {...compositionHandlers}
@@ -307,9 +314,16 @@ export function CardEditScreen() {
           }
         }}
       >
-        <h2 className="card-form__title">
-          {editingId === null ? 'カードを追加' : 'カードを更新'}
-        </h2>
+        <div className="card-form__head">
+          <h2 className="card-form__title">
+            {editingId === null ? 'カードを追加' : 'カードを更新'}
+          </h2>
+          {/* 1枚ずつの追加とまとめての取り込みを同じ枠にまとめる (specs.md §4.3) */}
+          <Link className="btn btn--small" to={`/import?setId=${set.id}`}>
+            <Icon name="import" size={15} />
+            インポート
+          </Link>
+        </div>
 
         <label className="field">
           <span className="field__label">用語 (表)</span>
@@ -444,6 +458,14 @@ export function CardEditScreen() {
             </li>
           ))}
         </ul>
+      )}
+
+      {/* 掴んだカードを指の先に見せる. 下の要素を拾えるよう pointer-events は無効 */}
+      {dragIndex !== null && (
+        <div className="drag-ghost" style={{ left: dragPoint.x, top: dragPoint.y }}>
+          <Icon name="grip" size={14} />
+          {cards[dragIndex]?.term ?? ''}
+        </div>
       )}
 
       <Modal
