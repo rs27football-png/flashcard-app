@@ -1,4 +1,4 @@
-// 検索用の正規化 ( specs.md §4.10 ).
+// 検索用の正規化 (specs.md §4.10).
 //
 // 適用順序が重要である. NFKC を先に行わないと半角カナが全角カナに揃わず,
 // 後段のひらがな化が働かないため, 「ﾈｯﾄﾜｰｸ」が「ねっとわーく」で拾えなくなる.
@@ -10,8 +10,8 @@ const KANA_OFFSET = 0x60 // カタカナとひらがなのコードポイント�
 /**
  * カタカナをひらがなへ変換する.
  *
- * U+30F7〜U+30FA ( ヷヸヹヺ ) には対応するひらがなが存在しないため, 上限を U+30F6 とし
- * 変換対象から除外している. 長音符 ( U+30FC ) も範囲外なのでそのまま残る.
+ * U+30F7〜U+30FA (ヷヸヹヺ) には対応するひらがなが存在しないため, 上限を U+30F6 とし
+ * 変換対象から除外している. 長音符 (U+30FC) も範囲外なのでそのまま残る.
  */
 function katakanaToHiragana(input: string): string {
   let result = ''
@@ -36,7 +36,7 @@ export function normalizeForSearch(input: string): string {
 
 /**
  * カードの検索用文字列を組み立てる.
- * 用語・定義・ヒントを改行で連結したうえで正規化する ( specs.md §2.3 ).
+ * 用語・定義・ヒントを改行で連結したうえで正規化する (specs.md §2.3).
  */
 export function buildCardNormalized(fields: {
   term: string

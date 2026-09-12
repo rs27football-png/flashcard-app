@@ -3,15 +3,16 @@ import { Link, useParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import type { Folder, StudySet } from '../../core/types'
 import { getFolderPath, listFolders } from '../../core/db/folders'
-import { countCardsPerSet, listAllSets } from '../../core/db/sets'
+import { countCardsPerSet, deleteSets, listAllSets } from '../../core/db/sets'
 import { mergeSets, type MergeResult } from '../../core/db/setOps'
 import { FolderSelect } from '../components/FolderSelect'
 import { Icon } from '../components/Icon'
 import { Toggle } from '../components/Toggle'
+import { ORDER_ATTRIBUTE, useReorderDrag } from '../hooks/useReorderDrag'
 
 type Step = 'pick' | 'settings'
 
-/** 学習セットの統合 ( specs.md §4.9.2 ). 手順1 で選び, 手順2 で順番と出力先を決める */
+/** 学習セットの統合 (specs.md §4.9.2). 手順1 で選び, 手順2 で順番と出力先を決める */
 export function MergeScreen() {
   const { setId = '' } = useParams<{ setId: string }>()
   // 読み込み中と「見つからない」を区別するため, 既定値を渡さずに undefined を受ける
@@ -29,10 +30,12 @@ export function MergeScreen() {
   const [folderId, setFolderId] = useState<string | null | undefined>(undefined)
   const [existingId, setExistingId] = useState(setId)
   const [skipDuplicates, setSkipDuplicates] = useState(true)
-  const [deleteSources, setDeleteSources] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<MergeResult | null>(null)
+  /** 統合したあとに残っている統合元. 削除するかどうかはここで尋ねる (specs.md §4.9.2) */
+  const [leftovers, setLeftovers] = useState<{ id: string; name: string }[]>([])
+  const [sourceDecision, setSourceDecision] = useState<'pending' | 'kept' | 'deleted'>('pending')
 
   const sets = useMemo(() => loadedSets ?? [], [loadedSets])
   const setById = useMemo(() => new Map(sets.map((set) => [set.id, set])), [sets])
@@ -42,19 +45,78 @@ export function MergeScreen() {
       .join(' / ') || 'ルート'
   const countOf = (id: string) => cardCounts.get(id) ?? 0
 
+  const moveTo = (from: number, to: number) => {
+    setSelected((previous) => {
+      if (from === to || from < 0 || to < 0 || from >= previous.length || to >= previous.length) {
+        return previous
+      }
+      const next = [...previous]
+      const [moved] = next.splice(from, 1)
+      next.splice(to, 0, moved)
+      return next
+    })
+  }
+  const { dragIndex, start: startReorder } = useReorderDrag(moveTo)
+
   // 統合し終えたあとは, 元のセットが消えていても結果を出す
   if (result !== null) {
+    const removeSources = async () => {
+      setBusy(true)
+      setError(null)
+      try {
+        await deleteSets(leftovers.map((source) => source.id))
+        setSourceDecision('deleted')
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : '削除に失敗しました.')
+      } finally {
+        setBusy(false)
+      }
+    }
+
     return (
       <div className="screen">
         <h1 className="screen__title">統合しました</h1>
         <ul className="result-list">
           <li>{result.added} 枚を取り込みました.</li>
           {result.skipped > 0 && <li>完全一致のカード {result.skipped} 枚を除きました.</li>}
-          {result.deleted > 0 && <li>元のセット {result.deleted} 件を削除しました.</li>}
         </ul>
-        <Link className="btn btn--primary btn--large" to={`/sets/${result.setId}`}>
-          統合したセットを開く
-        </Link>
+
+        {/* 取り込んだ結果を見てから決められるよう, 統合元の扱いはここで尋ねる (specs.md §4.9.2) */}
+        {leftovers.length > 0 && sourceDecision === 'pending' && (
+          <section className="section">
+            <h2 className="section__title">統合元のセットはどうしますか?</h2>
+            <p className="note">{leftovers.map((source) => source.name).join(', ')}</p>
+            <div className="form__actions">
+              <button
+                type="button"
+                className="btn"
+                disabled={busy}
+                onClick={() => setSourceDecision('kept')}
+              >
+                残す
+              </button>
+              <button
+                type="button"
+                className="btn btn--danger"
+                disabled={busy}
+                onClick={() => void removeSources()}
+              >
+                {busy ? '削除中…' : `${leftovers.length} 件を削除する`}
+              </button>
+            </div>
+          </section>
+        )}
+        {sourceDecision === 'kept' && <p className="note">統合元のセットは残しました.</p>}
+        {sourceDecision === 'deleted' && (
+          <p className="note">統合元の {leftovers.length} 件を削除しました.</p>
+        )}
+        {error !== null && <p className="alert">{error}</p>}
+
+        <div className="form__actions form__actions--stack">
+          <Link className="btn btn--primary btn--large" to={`/sets/${result.setId}`}>
+            統合したセットを開く
+          </Link>
+        </div>
       </div>
     )
   }
@@ -72,7 +134,7 @@ export function MergeScreen() {
     )
   }
 
-  const name = newName ?? `${current.name} ( 統合 )`
+  const name = newName ?? `${current.name} (統合)`
   const targetFolderId = folderId === undefined ? current.folderId : folderId
 
   const toggle = (id: string) => {
@@ -80,16 +142,6 @@ export function MergeScreen() {
     setSelected((previous) =>
       previous.includes(id) ? previous.filter((item) => item !== id) : [...previous, id],
     )
-  }
-
-  const move = (index: number, direction: -1 | 1) => {
-    setSelected((previous) => {
-      const next = [...previous]
-      const target = index + direction
-      if (target < 0 || target >= next.length) return previous
-      ;[next[index], next[target]] = [next[target], next[index]]
-      return next
-    })
   }
 
   if (step === 'pick') {
@@ -168,17 +220,22 @@ export function MergeScreen() {
     setBusy(true)
     setError(null)
     try {
-      setResult(
-        await mergeSets({
-          sourceIds: selected,
-          destination:
-            destination === 'new'
-              ? { kind: 'new', name, folderId: targetFolderId }
-              : { kind: 'existing', setId: existingId },
-          skipDuplicates,
-          deleteSources,
-        }),
+      const merged = await mergeSets({
+        sourceIds: selected,
+        destination:
+          destination === 'new'
+            ? { kind: 'new', name, folderId: targetFolderId }
+            : { kind: 'existing', setId: existingId },
+        skipDuplicates,
+        // 統合元を削除するかどうかは, 結果を見せてから尋ねる (specs.md §4.9.2)
+        deleteSources: false,
+      })
+      setLeftovers(
+        selected
+          .filter((id) => id !== merged.setId)
+          .map((id) => ({ id, name: setById.get(id)?.name ?? '' })),
       )
+      setResult(merged)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '統合に失敗しました.')
     } finally {
@@ -199,13 +256,17 @@ export function MergeScreen() {
 
       <section className="section">
         <h2 className="section__title">並び順</h2>
-        <p className="note">この順にカードが並びます. ↑↓ で入れ替えられます.</p>
+        <p className="note">この順にカードが並びます. 右のつまみをドラッグして入れ替えられます.</p>
         <ol className="order-list">
           {selected.map((id, index) => {
             const set = setById.get(id)
             if (set === undefined) return null
             return (
-              <li key={id} className="order-row">
+              <li
+                key={id}
+                className={`order-row ${dragIndex === index ? 'order-row--dragging' : ''}`}
+                {...{ [ORDER_ATTRIBUTE]: index }}
+              >
                 <span className="pick-num">{index + 1}</span>
                 <span className="order-row__name">
                   {set.name}
@@ -214,23 +275,15 @@ export function MergeScreen() {
                   )}
                 </span>
                 <span className="pick-row__meta">{countOf(id)} 枚</span>
+                {/* つまみだけを掴めるようにして, 画面の縦スクロールと競合させない */}
                 <button
                   type="button"
-                  className="btn btn--icon"
-                  aria-label={`${set.name} を上へ`}
-                  disabled={index === 0}
-                  onClick={() => move(index, -1)}
+                  className="order-grip"
+                  aria-label={`${set.name} を掴んで並べ替え`}
+                  title="ドラッグして並べ替え"
+                  onPointerDown={(event) => startReorder(event, index)}
                 >
-                  <Icon name="arrow-up" size={17} />
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--icon"
-                  aria-label={`${set.name} を下へ`}
-                  disabled={index === selected.length - 1}
-                  onClick={() => move(index, 1)}
-                >
-                  <Icon name="arrow-down" size={17} />
+                  <Icon name="grip" size={17} />
                 </button>
               </li>
             )
@@ -280,7 +333,7 @@ export function MergeScreen() {
         ) : (
           <div className="form" style={{ marginTop: '0.75rem' }}>
             <label className="field">
-              <span className="field__label">追記先 ( 統合するセットから選ぶ )</span>
+              <span className="field__label">追記先 (統合するセットから選ぶ)</span>
               <select
                 className="input"
                 value={existingId}
@@ -308,17 +361,10 @@ export function MergeScreen() {
             checked={skipDuplicates}
             onChange={setSkipDuplicates}
           />
-          <Toggle
-            label="元のセットを削除する"
-            description={
-              destination === 'existing' ? '追記先以外の選んだセットを削除する' : '統合したあと, 選んだセットを削除する'
-            }
-            checked={deleteSources}
-            onChange={setDeleteSources}
-          />
         </div>
         <p className="note">
           取り込んだカードの進捗は未学習から始まります. 画像と数式の設定は, どれか1つで有効なら有効になります.
+          統合元のセットを削除するかどうかは, 統合したあとに尋ねます.
         </p>
       </section>
 
@@ -331,7 +377,7 @@ export function MergeScreen() {
           disabled={busy || (destination === 'new' && name.trim() === '')}
           onClick={() => void run()}
         >
-          {busy ? '統合中…' : `統合する ( ${incoming} 枚 )`}
+          {busy ? '統合中…' : `統合する (${incoming} 枚)`}
         </button>
       </div>
     </div>

@@ -11,7 +11,7 @@ interface SetActionsSheetProps {
 }
 
 /**
- * 学習セットの操作 ( コピー・統合・分割 ) の一覧 ( specs.md §4.9 ).
+ * 学習セットの操作 (コピー・統合・分割) の一覧 (specs.md §4.9).
  * セット詳細の ⋯ とホームの学習セットの行の ⋯ で共用する. 開くときに描画し, 閉じたら外す前提.
  */
 export function SetActionsSheet({ set, onClose, onCopy }: SetActionsSheetProps) {

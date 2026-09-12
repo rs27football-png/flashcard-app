@@ -1,4 +1,4 @@
-// 学習セットのコピー・統合・分割 ( specs.md §4.9 ).
+// 学習セットのコピー・統合・分割 (specs.md §4.9).
 import type { Asset, Card, CardProgress, Folder, StudySet } from '../types'
 import { listCards } from './cards'
 import { db, newId, nextOrder } from './db'
@@ -24,7 +24,7 @@ interface CloneOptions {
  * カードを別のセットへ複製する. 呼び出し側のトランザクションの中で使う.
  *
  * 画像は参照を共有させず, 実体ごと複製する. 共有すると片方のセットを消したときに
- * もう片方の画像まで消えてしまうため ( 画像はセットの削除に連動して消える, §4.2 ).
+ * もう片方の画像まで消えてしまうため (画像はセットの削除に連動して消える, §4.2).
  */
 async function cloneCards(cards: readonly Card[], options: CloneOptions): Promise<number> {
   if (cards.length === 0) return 0
@@ -92,7 +92,7 @@ async function removeCards(cards: readonly Card[]): Promise<void> {
   if (assetIds.length > 0) await db.assets.bulkDelete(assetIds)
 }
 
-// ---------------- コピー ( §4.9.1 ) ----------------
+// ---------------- コピー (§4.9.1) ----------------
 
 export interface CopySetOptions {
   name: string
@@ -107,7 +107,7 @@ export async function copySet(setId: string, options: CopySetOptions): Promise<s
     const source = await db.sets.get(setId)
     if (source === undefined) throw new Error('コピー元のセットが見つかりません.')
     const now = Date.now()
-    // ★ ( カードの属性 ) とリッチコンテンツ設定, 学習オプションはそのまま引き継ぐ
+    // ★ (カードの属性) とリッチコンテンツ設定, 学習オプションはそのまま引き継ぐ
     const copy: StudySet = {
       ...source,
       id: newId(),
@@ -128,7 +128,7 @@ export async function copySet(setId: string, options: CopySetOptions): Promise<s
   })
 }
 
-// ---------------- 統合 ( §4.9.2 ) ----------------
+// ---------------- 統合 (§4.9.2) ----------------
 
 export type MergeDestination =
   | { kind: 'new'; name: string; folderId: string | null }
@@ -156,7 +156,7 @@ export interface MergeResult {
  *
  * 既存のセットへ追記する場合, 追記先のカードは今の並びのまま先頭に残り,
  * 他の統合元が sourceIds の順に後ろへ続く. 追記先が統合元に含まれていても二重には取り込まない.
- * 取り込んだカードの進捗は未学習から始める ( §4.9.2, §9.2 D3 ).
+ * 取り込んだカードの進捗は未学習から始める (§4.9.2, §9.2 D3).
  */
 export async function mergeSets(options: MergeOptions): Promise<MergeResult> {
   if (options.sourceIds.length < 2) throw new Error('統合するセットを2つ以上選んでください.')
@@ -189,7 +189,7 @@ export async function mergeSets(options: MergeOptions): Promise<MergeResult> {
       target = existing
     }
 
-    // リッチコンテンツ設定は統合元の論理和 ( §4.4.4 )
+    // リッチコンテンツ設定は統合元の論理和 (§4.4.4)
     const involved = [target, ...sources]
     await db.sets.update(target.id, {
       enableImages: involved.some((set) => set.enableImages),
@@ -239,7 +239,7 @@ export async function mergeSets(options: MergeOptions): Promise<MergeResult> {
   })
 }
 
-// ---------------- 分割 ( §4.9.3 ) ----------------
+// ---------------- 分割 (§4.9.3) ----------------
 
 export type SplitRule =
   | { kind: 'count'; size: number }
@@ -283,7 +283,7 @@ export interface SplitOptions {
   rule: SplitRule
   /** 分割先のフォルダ */
   folderId: string | null
-  /** true なら元のセットから該当カードを取り除く ( 移動 ). false なら元のセットを残す ( 複製 ) */
+  /** true なら元のセットから該当カードを取り除く (移動). false なら元のセットを残す (複製) */
   moveCards: boolean
 }
 
@@ -293,7 +293,7 @@ export interface SplitResult {
   sourceDeleted: boolean
 }
 
-/** 学習セットを分割する. 分割先は元の進捗とリッチコンテンツ設定を引き継ぐ ( §4.9.3, §4.4.4 ) */
+/** 学習セットを分割する. 分割先は元の進捗とリッチコンテンツ設定を引き継ぐ (§4.9.3, §4.4.4) */
 export async function splitSet(options: SplitOptions): Promise<SplitResult> {
   return db.transaction('rw', SCOPE, async () => {
     const source = await db.sets.get(options.setId)
@@ -344,14 +344,14 @@ export async function splitSet(options: SplitOptions): Promise<SplitResult> {
   })
 }
 
-// ---------------- フォルダのコピー ( §4.1, v3.7 ) ----------------
+// ---------------- フォルダのコピー (§4.1, v3.7) ----------------
 
 /**
  * フォルダを中身ごと複製する. 複製した最上位のフォルダの ID を返す.
  *
  * 下位フォルダと学習セットを階層を保って複製し, 最上位は元と同じ階層に置く.
- * 学習セットの扱いはセットのコピーの既定 ( ★とリッチコンテンツ設定を引き継ぎ,
- * 進捗は引き継がない ) に揃える.
+ * 学習セットの扱いはセットのコピーの既定 (★とリッチコンテンツ設定を引き継ぎ,
+ * 進捗は引き継がない) に揃える.
  */
 export async function copyFolder(folderId: string): Promise<string> {
   return db.transaction('rw', [db.folders, ...SCOPE], async () => {

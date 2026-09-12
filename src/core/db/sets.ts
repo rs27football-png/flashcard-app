@@ -33,7 +33,7 @@ export async function createSet(input: StudySetInput): Promise<StudySet> {
     description: input.description.trim(),
     folderId: input.folderId,
     order: nextOrder(await listSetsInFolder(input.folderId)),
-    // リッチコンテンツは新規セットでは無効とする ( specs.md §4.4.1 )
+    // リッチコンテンツは新規セットでは無効とする (specs.md §4.4.1)
     enableImages: false,
     enableMath: false,
     studyOptions: DEFAULT_STUDY_OPTIONS,
@@ -62,7 +62,7 @@ export async function updateSet(id: string, input: StudySetInput): Promise<void>
   })
 }
 
-/** セットを削除する. 配下のカード・進捗・画像・中断状態も連動して削除する ( specs.md §4.2 ) */
+/** セットを削除する. 配下のカード・進捗・画像・中断状態も連動して削除する (specs.md §4.2) */
 export async function deleteSet(id: string): Promise<void> {
   await db.transaction(
     'rw',
@@ -94,7 +94,7 @@ export async function deleteSets(ids: readonly string[]): Promise<void> {
   )
 }
 
-/** セット詳細画面の進捗サマリ ( specs.md §4.2 ) */
+/** セット詳細画面の進捗サマリ (specs.md §4.2) */
 export async function getProgressSummary(setId: string): Promise<ProgressSummary> {
   const records = await db.progress.where('setId').equals(setId).toArray()
   const summary: ProgressSummary = {
@@ -127,7 +127,7 @@ export function countCardsInSet(setId: string): Promise<number> {
 }
 
 /**
- * 学習オプションを記憶する ( specs.md §2.7 ).
+ * 学習オプションを記憶する (specs.md §2.7).
  * 次回の学習開始時の既定値になる.
  */
 export async function updateStudyOptions(
@@ -138,7 +138,7 @@ export async function updateStudyOptions(
 }
 
 /**
- * 学習セットを別のフォルダへ移す ( specs.md §4.1, §4.2 ).
+ * 学習セットを別のフォルダへ移す (specs.md §4.1, §4.2).
  * 移動先の末尾に置く. 元の order のままだと移動先の既存セットと重なるため.
  */
 export async function moveSet(setId: string, folderId: string | null): Promise<void> {
@@ -151,7 +151,7 @@ export async function moveSet(setId: string, folderId: string | null): Promise<v
   })
 }
 
-/** 4択モードの出題オプションを記憶する ( specs.md §2.7 ) */
+/** 4択モードの出題オプションを記憶する (specs.md §2.7) */
 export async function updateQuizOptions(setId: string, quizOptions: QuizOptions): Promise<void> {
   await db.sets.update(setId, { quizOptions })
 }

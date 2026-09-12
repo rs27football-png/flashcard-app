@@ -1,6 +1,6 @@
 import type { ProgressSummary } from '../../core/types'
 
-/** セット詳細の進捗サマリ ( specs.md §4.2 ) */
+/** セット詳細の進捗サマリ (specs.md §4.2) */
 export function ProgressBar({ summary }: { summary: ProgressSummary }) {
   const { total, known, learning, unseen } = summary
   const rate = total === 0 ? 0 : Math.round((known / total) * 100)

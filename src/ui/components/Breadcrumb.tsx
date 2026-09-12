@@ -8,14 +8,14 @@ import { Icon } from './Icon'
 interface BreadcrumbProps {
   folders: readonly Folder[]
   folderId: string | null
-  /** 経路の末尾に置く現在位置の名称 ( 学習セット名など ) */
+  /** 経路の末尾に置く現在位置の名称 (学習セット名など) */
   current?: string
   /** 今開いている学習セット. フォルダの一覧で強調するために渡す */
   currentSetId?: string
 }
 
 /**
- * 現在位置を示すパンくずリスト ( specs.md §4.1 ).
+ * 現在位置を示すパンくずリスト (specs.md §4.1).
  *
  * 中間のフォルダ名は押せるようにしてあり, そのフォルダの中身を一覧するシートを開く.
  * 「ホーム」はホーム画面への移動, 末尾の現在地は表示のみとする.

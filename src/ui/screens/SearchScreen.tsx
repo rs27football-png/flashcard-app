@@ -38,7 +38,7 @@ function folderOptions(folders: readonly Folder[], parentId: string | null, dept
   ])
 }
 
-/** S8 検索. 全セット横断の全文検索 ( specs.md §3, §4.10 ) */
+/** S8 検索. 全セット横断の全文検索 (specs.md §3, §4.10) */
 export function SearchScreen() {
   // 画面を開いている間は全カードを手元に持ち, 入力のたびに IndexedDB を読み直さない
   const cards = useLiveQuery(() => listAllCards(), [], [] as Card[])
@@ -119,7 +119,7 @@ export function SearchScreen() {
         <>
           {result.sets.length > 0 && (
             <section className="search-group">
-              <h2 className="search-group__title">学習セット ( {result.sets.length} )</h2>
+              <h2 className="search-group__title">学習セット ({result.sets.length})</h2>
               <ul className="search-list">
                 {result.sets.map((set) => (
                   <li key={set.id}>
@@ -140,7 +140,7 @@ export function SearchScreen() {
 
           <section className="search-group">
             <h2 className="search-group__title">
-              カード ( {result.totalCards} )
+              カード ({result.totalCards})
               {result.totalCards > MAX_CARD_HITS && ` — 先頭 ${MAX_CARD_HITS} 件を表示`}
             </h2>
             {result.cards.length === 0 ? (
@@ -152,7 +152,7 @@ export function SearchScreen() {
                   const where = set === undefined ? '' : [pathOf(set.folderId), set.name].filter(Boolean).join(' / ')
                   return (
                     <li key={hit.card.id}>
-                      {/* 当該セットの当該カードへ移動する ( specs.md §4.10 ) */}
+                      {/* 当該セットの当該カードへ移動する (specs.md §4.10) */}
                       <Link className="search-hit" to={`/sets/${hit.card.setId}?card=${hit.card.id}`}>
                         <span className="search-hit__term">
                           <span>

@@ -1,7 +1,7 @@
 /*
  * 全画面共通のスタイル.
  *
- * 既定はダークテーマ ( specs.md §6.4 ). テーマ切り替えは設定画面 ( S9 ) とあわせて
+ * 既定はダークテーマ (specs.md §6.4). テーマ切り替えは設定画面 (S9) とあわせて
  * 後の段階で追加するため, 段階1ではダーク固定としている.
  * 画面幅375ピクセルから崩れないことを前提に組む.
  */
@@ -36,7 +36,7 @@ body {
   min-height: 100svh;
   background-color: var(--bg);
   color: var(--fg);
-  /* iPhone のノッチとホームインジケータを避ける ( specs.md §6.4 ) */
+  /* iPhone のノッチとホームインジケータを避ける (specs.md §6.4) */
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
     env(safe-area-inset-left);
 }
@@ -269,7 +269,9 @@ body {
 /* ---- パンくずリスト ---- */
 
 .breadcrumb {
-  margin-bottom: 0.5rem;
+  /* 見出しや操作ボタンと詰まって見えないよう, ここで間隔を確保する.
+     隣り合う要素の余白は大きいほうに揃うため, 下側だけを広げれば足りる */
+  margin-bottom: 1.5rem;
   color: var(--fg-muted);
   font-size: 0.8125rem;
   overflow-wrap: anywhere;
@@ -395,7 +397,7 @@ body {
 
 /* ---- 進捗サマリ ---- */
 
-/* 余白は外側の枠 ( .set-progress ) が受け持つ */
+/* 余白は外側の枠 (.set-progress) が受け持つ */
 .progress {
   margin: 0;
 }
@@ -678,7 +680,7 @@ body {
   color: var(--danger);
 }
 
-/* ---- アニメーションの抑制 ( specs.md §6.4 ) ---- */
+/* ---- アニメーションの抑制 (specs.md §6.4) ---- */
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -689,7 +691,7 @@ body {
   }
 }
 
-/* ---- インポート画面 ( S4 ) ---- */
+/* ---- インポート画面 (S4) ---- */
 
 .fieldset {
   margin: 0 0 0.75rem;
@@ -777,7 +779,7 @@ body {
   white-space: nowrap;
 }
 
-/* ---- 暗記モード ( S5 ) ---- */
+/* ---- 暗記モード (S5) ---- */
 
 .study {
   display: flex;
@@ -842,7 +844,7 @@ body {
   overflow: hidden;
 }
 
-/* 山札. 手前の札の下に次の札が控える ( specs.md §4.6.2 ) */
+/* 山札. 手前の札の下に次の札が控える (specs.md §4.6.2) */
 .stack {
   position: relative;
   width: 100%;
@@ -952,7 +954,7 @@ body {
 }
 
 /*
- * 控えていた札に中身が浮かび上がる ( specs.md §4.6.2 ).
+ * 控えていた札に中身が浮かび上がる (specs.md §4.6.2).
  * 札そのものは動かさず面だけを対象にしている. 外枠の transform は指への追随に
  * 使っているため, そちらに重ねると掴んだ瞬間の反応が鈍る.
  */
@@ -1034,7 +1036,7 @@ body {
   }
 }
 
-/* ---- 結果 ( S7 ) ---- */
+/* ---- 結果 (S7) ---- */
 
 .result {
   display: flex;
@@ -1089,7 +1091,7 @@ body {
   color: var(--accent);
 }
 
-/* ---- トグルスイッチ ( specs.md §6.4 ) ---- */
+/* ---- トグルスイッチ (specs.md §6.4) ---- */
 
 .toggle {
   display: flex;
@@ -1276,7 +1278,7 @@ body {
 }
 
 
-/* ---- フォルダの中身のシート ( specs.md §4.1 ) ---- */
+/* ---- フォルダの中身のシート (specs.md §4.1) ---- */
 
 .modal--sheet .modal__body {
   max-height: 60svh;
@@ -1393,7 +1395,7 @@ body {
 }
 
 
-/* ---- 4択モード ( S6 ) ---- */
+/* ---- 4択モード (S6) ---- */
 
 .quiz__head {
   display: flex;
@@ -1639,7 +1641,7 @@ body {
   gap: 0.5rem;
 }
 
-/* ---- 検索 ( S8 ) ---- */
+/* ---- 検索 (S8) ---- */
 
 .search-entry {
   display: flex;
@@ -1775,7 +1777,7 @@ mark.hit {
   }
 }
 
-/* ---- 統合・分割 ( specs.md §4.9 ) ---- */
+/* ---- 統合・分割 (specs.md §4.9) ---- */
 
 .pick-list {
   display: flex;
@@ -1876,6 +1878,30 @@ mark.hit {
   gap: 0.5rem;
   padding: 0.375rem 0;
   border-bottom: 1px solid var(--border);
+}
+
+/* 並べ替えのつまみ. ここだけスクロールを止め, 行のドラッグと両立させる */
+.order-grip {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  min-height: 2.75rem;
+  border: none;
+  background: none;
+  color: var(--fg-muted);
+  cursor: grab;
+  touch-action: none;
+}
+
+.order-grip:active {
+  cursor: grabbing;
+}
+
+.order-row--dragging {
+  border-radius: var(--radius);
+  background-color: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 .order-row__name {

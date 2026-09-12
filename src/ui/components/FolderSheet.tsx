@@ -19,11 +19,11 @@ interface FolderSheetProps {
 }
 
 /**
- * パンくずのフォルダ名から開く, フォルダの中身の一覧 ( specs.md §4.1 ).
+ * パンくずのフォルダ名から開く, フォルダの中身の一覧 (specs.md §4.1).
  *
  * 本アプリにはフォルダ単位の画面がない. 画面を離れずに階層を行き来できるよう,
  * 下位フォルダを選んだらこのシートの中で潜り, 学習セットを選んだ時点で移動する.
- * 開くたびに作り直す前提 ( 呼び出し側で key を変える ) で, 見ている階層は内部で持つ.
+ * 開くたびに作り直す前提 (呼び出し側で key を変える) で, 見ている階層は内部で持つ.
  */
 export function FolderSheet({
   startFolderId,
@@ -51,7 +51,7 @@ export function FolderSheet({
 
   const openSet = (setId: string) => {
     onClose()
-    // どの画面から開いても行き先はセット詳細に揃える ( specs.md §4.1 )
+    // どの画面から開いても行き先はセット詳細に揃える (specs.md §4.1)
     if (setId !== currentSetId) navigate(`/sets/${setId}`)
   }
 

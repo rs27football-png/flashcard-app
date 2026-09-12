@@ -1,6 +1,6 @@
 import type { QuizOptions, StudyOptions } from '../types'
 
-/** 学習オプションの既定値 ( specs.md §2.7 ) */
+/** 学習オプションの既定値 (specs.md §2.7) */
 export const DEFAULT_STUDY_OPTIONS: StudyOptions = {
   trackProgress: true,
   starredOnly: false,
@@ -18,7 +18,7 @@ export function normalizeStudyOptions(value: Partial<StudyOptions> | undefined):
   return { ...DEFAULT_STUDY_OPTIONS, ...value }
 }
 
-/** 4択モードの出題オプションの既定値. 出題順は既定でシャッフルとする ( specs.md §4.7.1 ) */
+/** 4択モードの出題オプションの既定値. 出題順は既定でシャッフルとする (specs.md §4.7.1) */
 export const DEFAULT_QUIZ_OPTIONS: QuizOptions = {
   starredOnly: false,
   learningOnly: false,

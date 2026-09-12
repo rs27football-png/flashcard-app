@@ -2,7 +2,7 @@ import type { Card, CardProgress } from '../types'
 import { buildCardNormalized } from '../search/normalize'
 import { db, newId, nextOrder } from './db'
 
-/** カード編集画面から受け取る入力 ( 段階1 では画像を扱わない ) */
+/** カード編集画面から受け取る入力 (段階1 では画像を扱わない) */
 export interface CardInput {
   term: string
   definition: string
@@ -29,7 +29,7 @@ function trimInput(input: CardInput): CardInput {
 
 /**
  * 用語と定義がともに空のカードは作れない.
- * 段階6 で画像に対応した後は, 画像が添付されていれば空文字列を認める ( specs.md §2.3 ).
+ * 段階6 で画像に対応した後は, 画像が添付されていれば空文字列を認める (specs.md §2.3).
  */
 function assertNotEmpty(input: CardInput): void {
   if (input.term === '' && input.definition === '') {
@@ -37,7 +37,7 @@ function assertNotEmpty(input: CardInput): void {
   }
 }
 
-/** カードを追加する. 進捗レコードを同時に生成する ( specs.md §2.5 ) */
+/** カードを追加する. 進捗レコードを同時に生成する (specs.md §2.5) */
 export async function createCard(setId: string, input: CardInput): Promise<Card> {
   const values = trimInput(input)
   assertNotEmpty(values)
@@ -90,7 +90,7 @@ export async function updateCard(id: string, input: CardInput): Promise<void> {
   })
 }
 
-/** カードを削除する. 進捗と画像も連動して削除する ( specs.md §4.3 ) */
+/** カードを削除する. 進捗と画像も連動して削除する (specs.md §4.3) */
 export async function deleteCard(id: string): Promise<void> {
   await db.transaction('rw', db.cards, db.progress, db.assets, db.sets, async () => {
     const card = await db.cards.get(id)
@@ -119,7 +119,7 @@ export async function setStarred(id: string, starred: boolean): Promise<void> {
 }
 
 /**
- * カードを1つ隣と入れ替える ( direction: -1 で上, 1 で下 ).
+ * カードを1つ隣と入れ替える (direction: -1 で上, 1 で下).
  *
  * 全件の order を振り直すのではなく2件の order を交換するだけにしてある.
  * カードが1万枚あるセットでも書き込みが2件で済むようにするため.
@@ -137,7 +137,7 @@ export async function moveCard(id: string, direction: -1 | 1): Promise<void> {
   })
 }
 
-/** 「用語の昇順」「作成日時順」への一括整列 ( specs.md §4.3 ) */
+/** 「用語の昇順」「作成日時順」への一括整列 (specs.md §4.3) */
 export async function sortCards(setId: string, by: 'term' | 'createdAt'): Promise<void> {
   await db.transaction('rw', db.cards, async () => {
     const cards = await listCards(setId)
@@ -152,7 +152,7 @@ export async function sortCards(setId: string, by: 'term' | 'createdAt'): Promis
 }
 
 /**
- * カードをまとめて追加する. テキストインポートから呼ぶ ( specs.md §4.5 ).
+ * カードをまとめて追加する. テキストインポートから呼ぶ (specs.md §4.5).
  *
  * 1枚ずつ createCard を呼ぶと, 枚数分だけトランザクションと order の再計算が走る.
  * 数百枚の貼り付けが前提のため, 一括の書き込みにまとめる.
@@ -201,7 +201,7 @@ export async function createCards(
 
 /**
  * 全カードを読み出す. 横断検索は画面を開いている間これを手元に持ち,
- * 入力のたびに IndexedDB を読み直さずに照合する ( specs.md §6.3 ).
+ * 入力のたびに IndexedDB を読み直さずに照合する (specs.md §6.3).
  */
 export function listAllCards(): Promise<Card[]> {
   return db.cards.toArray()

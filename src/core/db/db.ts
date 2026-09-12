@@ -13,7 +13,7 @@ import type {
 import { DEFAULT_QUIZ_OPTIONS, DEFAULT_STUDY_OPTIONS } from '../study/options'
 
 /**
- * IndexedDB のスキーマ定義 ( specs.md §2 ).
+ * IndexedDB のスキーマ定義 (specs.md §2).
  *
  * 段階1 で用いるのは folders / sets / cards / progress の4つだが, テーブルは
  * 最初からすべて宣言する. 後から stores() に追加するとバージョンを上げる必要があり,
@@ -43,7 +43,7 @@ db.version(1).stores({
 
 // v3.3 で StudySet に studyOptions を追加した. 索引は変わらないため stores() は
 // 呼ばず, 既存のセットに既定値を埋める移行だけを行う.
-// ( 新規に作られる DB では最初から createSet が値を入れるので, この処理は走らない )
+// (新規に作られる DB では最初から createSet が値を入れるので, この処理は走らない)
 db.version(2).upgrade(async (tx) => {
   await tx
     .table('sets')

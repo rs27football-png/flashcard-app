@@ -14,11 +14,11 @@ interface CopySetDialogProps {
 }
 
 /**
- * 学習セットのコピー ( specs.md §4.9.1 ).
+ * 学習セットのコピー (specs.md §4.9.1).
  * 開くたびに描画し直す前提で, 入力値は内部で持つ.
  */
 export function CopySetDialog({ set, folders, onClose, onCopied }: CopySetDialogProps) {
-  // 名称の既定値は「( 元の名称 ) のコピー」
+  // 名称の既定値は「(元の名称) のコピー」
   const [name, setName] = useState(`${set.name} のコピー`)
   const [folderId, setFolderId] = useState<string | null>(set.folderId)
   // 進捗は既定で引き継がない

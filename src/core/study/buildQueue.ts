@@ -1,6 +1,6 @@
 import type { Card, CardProgress, StudyOptions } from '../types'
 
-/** キューが空になった理由. 利用者に何が起きたかを伝えるために区別する ( specs.md §4.6.1 ) */
+/** キューが空になった理由. 利用者に何が起きたかを伝えるために区別する (specs.md §4.6.1) */
 export type EmptyReason = 'no-cards' | 'no-starred' | 'all-known'
 
 export interface QueueResult {
@@ -25,7 +25,7 @@ export function shuffle<T>(items: readonly T[]): T[] {
 }
 
 /**
- * ラウンド開始時のキューを構築する ( specs.md §4.6.1 ).
+ * ラウンド開始時のキューを構築する (specs.md §4.6.1).
  *
  * 絞り込みの順序は仕様どおり ★ → 習得済の除外 → 並べ替え とする.
  * 途中で0枚になった段階を見て理由を決めるため, 各段で件数を確認している.
@@ -64,7 +64,7 @@ export function buildQueue(
 }
 
 /**
- * 結果画面から「学習中の N 枚を続ける」で次ラウンドを組む ( specs.md §4.6.5 ).
+ * 結果画面から「学習中の N 枚を続ける」で次ラウンドを組む (specs.md §4.6.5).
  * 未学習は含めず, status が learning のものだけを対象とする.
  */
 export function buildLearningQueue(

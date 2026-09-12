@@ -5,7 +5,7 @@ import { deleteSets } from './sets'
 /** 削除の巻き添え範囲. トランザクションに含めるテーブルをここに集約する */
 const DELETE_SCOPE = [db.folders, db.sets, db.cards, db.progress, db.assets, db.sessions]
 
-/** フォルダ削除時の挙動 ( specs.md §4.1 ) */
+/** フォルダ削除時の挙動 (specs.md §4.1) */
 export type FolderDeleteMode =
   /** 配下の下位フォルダと学習セットもまとめて削除する */
   | 'cascade'
@@ -63,7 +63,7 @@ export function collectSubtreeIds(folders: readonly Folder[], rootId: string): s
 }
 
 /**
- * フォルダを移動する. 移動先が自身または自身の子孫であれば拒否する ( specs.md §4.1 ).
+ * フォルダを移動する. 移動先が自身または自身の子孫であれば拒否する (specs.md §4.1).
  * これを許すと親子関係が輪になり, ツリーの探索が終わらなくなる.
  */
 export async function moveFolder(id: string, newParentId: string | null): Promise<void> {
@@ -78,7 +78,7 @@ export async function moveFolder(id: string, newParentId: string | null): Promis
   })
 }
 
-/** 削除の確認ダイアログに出す, 配下の件数 ( specs.md §4.1 ) */
+/** 削除の確認ダイアログに出す, 配下の件数 (specs.md §4.1) */
 export interface FolderContents {
   folderCount: number
   setCount: number
@@ -146,7 +146,7 @@ export async function deleteFolder(id: string, mode: FolderDeleteMode): Promise<
   })
 }
 
-/** ルートから当該フォルダまでの経路. パンくずリストに用いる ( specs.md §4.1 ) */
+/** ルートから当該フォルダまでの経路. パンくずリストに用いる (specs.md §4.1) */
 export function getFolderPath(
   folders: readonly Folder[],
   folderId: string | null,

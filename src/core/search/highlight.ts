@@ -1,7 +1,7 @@
-// 検索語に一致した箇所の特定 ( specs.md §4.10 ).
+// 検索語に一致した箇所の特定 (specs.md §4.10).
 import { normalizeForSearch } from './normalize'
 
-/** 元の文字列における一致範囲. end は含まない ( slice と同じ扱い ) */
+/** 元の文字列における一致範囲. end は含まない (slice と同じ扱い) */
 export interface MatchRange {
   start: number
   end: number
@@ -20,7 +20,7 @@ const HALF_WIDTH_SOUND_MARKS = new Set(['ﾞ', 'ﾟ'])
  * 元の文字列の中から, 正規化済みの検索語に一致する範囲を探す.
  *
  * 照合は正規化後の文字列で行うが, 強調は元の文字列に対して行う必要がある.
- * NFKC は文字数を変えることがある ( 「ｶﾞ」の2文字が「ガ」の1文字になる ) ため,
+ * NFKC は文字数を変えることがある (「ｶﾞ」の2文字が「ガ」の1文字になる) ため,
  * 文字の単位ごとに正規化し, 正規化後の位置から元の位置を引ける対応表を作る.
  */
 export function findMatches(original: string, normalizedQuery: string): MatchRange[] {

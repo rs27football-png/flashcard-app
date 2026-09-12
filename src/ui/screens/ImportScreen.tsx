@@ -15,12 +15,12 @@ import {
 } from '../../core/import/parseText'
 import { FolderSelect } from '../components/FolderSelect'
 
-/** プレビューに出す行数 ( specs.md §4.5 ) */
+/** プレビューに出す行数 (specs.md §4.5) */
 const PREVIEW_LIMIT = 20
 
 type Destination = 'new' | 'existing'
 
-/** S4 インポート. テキスト貼り付け, 区切り文字指定, プレビュー ( specs.md §3, §4.5 ) */
+/** S4 インポート. テキスト貼り付け, 区切り文字指定, プレビュー (specs.md §3, §4.5) */
 export function ImportScreen() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -79,7 +79,7 @@ export function ImportScreen() {
         target.map((card) => ({
           term: card.term,
           definition: card.definition,
-          // テキストインポートではヒントと画像を扱わない ( specs.md §4.4.2, §4.5 )
+          // テキストインポートではヒントと画像を扱わない (specs.md §4.4.2, §4.5)
           hint: '',
         })),
       )
@@ -103,7 +103,7 @@ export function ImportScreen() {
 
       <label className="field">
         <span className="field__label">
-          貼り付け ( Word, Excel, Google ドキュメントなどからそのまま貼れます )
+          貼り付け (Word, Excel, Google ドキュメントなどからそのまま貼れます)
         </span>
         <textarea
           className="input"
@@ -194,7 +194,7 @@ export function ImportScreen() {
               value={existingSetId}
               onChange={(event) => setExistingSetId(event.target.value)}
             >
-              <option value="">( 選択してください )</option>
+              <option value="">(選択してください)</option>
               {sortedSets.map((set) => (
                 <option key={set.id} value={set.id}>
                   {set.name}
@@ -230,7 +230,7 @@ export function ImportScreen() {
               {' / '}
               <strong>取り込み {importCount} 枚</strong>
               {parsed.cards.length > PREVIEW_LIMIT &&
-                ` ( 先頭 ${PREVIEW_LIMIT} 件を表示 )`}
+                ` (先頭 ${PREVIEW_LIMIT} 件を表示)`}
             </p>
             {parsed.missingDefinitionCount > 0 && (
               <p className="alert">
@@ -261,7 +261,7 @@ export function ImportScreen() {
                       <td>{card.term}</td>
                       <td>
                         {card.definition === '' ? (
-                          <span className="table__warn">( 定義なし )</span>
+                          <span className="table__warn">(定義なし)</span>
                         ) : (
                           card.definition
                         )}

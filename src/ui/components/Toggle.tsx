@@ -8,7 +8,7 @@ interface ToggleProps {
 }
 
 /**
- * 2値の設定を表すトグルスイッチ ( specs.md §6.4 ).
+ * 2値の設定を表すトグルスイッチ (specs.md §6.4).
  *
  * 見た目だけを差し替えた <input type="checkbox"> である. role="switch" を自前で
  * 組むより, ラベルとの関連付けやキーボード操作をブラウザに任せるほうが穴が少ない.

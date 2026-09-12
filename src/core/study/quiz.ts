@@ -1,8 +1,8 @@
-// 4択モードの出題 ( specs.md §4.7 ).
+// 4択モードの出題 (specs.md §4.7).
 import type { Card, CardProgress, QuizOptions } from '../types'
 import { shuffle } from './buildQueue'
 
-/** 選択肢の最大数 ( specs.md §4.7.2 ) */
+/** 選択肢の最大数 (specs.md §4.7.2) */
 export const MAX_CHOICES = 4
 
 export interface QuizChoice {
@@ -12,9 +12,9 @@ export interface QuizChoice {
 
 export interface QuizQuestion {
   cardId: string
-  /** 問題文 ( front で指定した側 ) */
+  /** 問題文 (front で指定した側) */
   prompt: string
-  /** 正答 ( 反対側 ) */
+  /** 正答 (反対側) */
   answer: string
   /** 表示順に並べた選択肢. 2〜4個 */
   choices: QuizChoice[]
@@ -25,7 +25,7 @@ export type QuizEmptyReason = 'too-few-cards' | 'no-starred' | 'no-learning' | '
 
 export interface QuizBuildResult {
   questions: QuizQuestion[]
-  /** 答え ( または問題文 ) が空で除外した枚数. 開始時に示す ( specs.md §4.7.2 ) */
+  /** 答え (または問題文) が空で除外した枚数. 開始時に示す (specs.md §4.7.2) */
   skippedEmpty: number
   /** 誤答を1つも作れず除外した枚数 */
   skippedNoDistractor: number
@@ -55,7 +55,7 @@ function collectAnswerTexts(setCards: readonly Card[], answerSide: Side): string
  * 誤答を count 個まで選ぶ. 正答と同じ文言は除く.
  *
  * 同じ定義を持つ別の用語があると, 正解に見える選択肢が2つ並んでしまうため,
- * 他カード由来でも正答と一致する文言は使わない. 重複判定はテキストの完全一致 ( specs.md §4.7.2 ).
+ * 他カード由来でも正答と一致する文言は使わない. 重複判定はテキストの完全一致 (specs.md §4.7.2).
  */
 function pickDistractors(texts: readonly string[], answer: string, count: number): string[] {
   // 候補が少ないときは全体を混ぜて先頭から取る
@@ -71,13 +71,13 @@ function pickDistractors(texts: readonly string[], answer: string, count: number
   return [...picked]
 }
 
-/** 答え ( または問題文 ) が空で, 出題できないカードか */
+/** 答え (または問題文) が空で, 出題できないカードか */
 export function hasEmptySide(card: Card, front: Side): boolean {
   return card[front] === '' || card[oppositeOf(front)] === ''
 }
 
 /**
- * 1問を作る. 作れない場合は null ( specs.md §4.7.2 ).
+ * 1問を作る. 作れない場合は null (specs.md §4.7.2).
  * answerTexts は collectAnswerTexts で集めた, セット全体の答え側の文言.
  */
 export function buildQuestion(
@@ -119,7 +119,7 @@ function makeQuestions(targets: readonly Card[], setCards: readonly Card[], fron
 }
 
 /**
- * 出題プールを作る ( specs.md §4.7.1, §4.7.2 ).
+ * 出題プールを作る (specs.md §4.7.1, §4.7.2).
  * 誤答は出題プールではなく同一セット全体から選ぶ. ★や学習中で絞っても選択肢の幅を保つため.
  */
 export function buildQuiz(
@@ -151,7 +151,7 @@ export function buildQuiz(
   return { ...made, emptyReason: made.questions.length === 0 ? 'no-questions' : null }
 }
 
-/** 指定したカードだけで問題を作り直す. 「間違えた問題だけ再挑戦」に用いる ( specs.md §4.7.4 ) */
+/** 指定したカードだけで問題を作り直す. 「間違えた問題だけ再挑戦」に用いる (specs.md §4.7.4) */
 export function buildQuestionsFor(
   targets: readonly Card[],
   setCards: readonly Card[],
