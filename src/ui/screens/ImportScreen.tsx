@@ -14,6 +14,7 @@ import {
   type TermSeparator,
 } from '../../core/import/parseText'
 import { FolderSelect } from '../components/FolderSelect'
+import { useGoBack } from '../hooks/useGoBack'
 
 /** プレビューに出す行数 (specs.md §4.5) */
 const PREVIEW_LIMIT = 20
@@ -23,6 +24,7 @@ type Destination = 'new' | 'existing'
 /** S4 インポート. テキスト貼り付け, 区切り文字指定, プレビュー (specs.md §3, §4.5) */
 export function ImportScreen() {
   const navigate = useNavigate()
+  const goBack = useGoBack()
   const [searchParams] = useSearchParams()
   const presetSetId = searchParams.get('setId')
 
@@ -40,11 +42,6 @@ export function ImportScreen() {
   const [skipDuplicates, setSkipDuplicates] = useState(true)
   const [running, setRunning] = useState(false)
 
-  /** 直前の画面へ戻る. URL を直接開いたなど履歴がない場合はホームへ向かう */
-  const goBack = () => {
-    if (window.history.length > 1) navigate(-1)
-    else navigate('/')
-  }
   const [error, setError] = useState<string | null>(null)
 
   // 取り込み先が既存セットのときだけ, 重複判定のために現在のカードを読む

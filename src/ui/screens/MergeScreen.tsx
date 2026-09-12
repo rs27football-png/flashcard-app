@@ -8,6 +8,7 @@ import { mergeSets, type MergeResult } from '../../core/db/setOps'
 import { FolderSelect } from '../components/FolderSelect'
 import { Icon } from '../components/Icon'
 import { Toggle } from '../components/Toggle'
+import { useGoBack } from '../hooks/useGoBack'
 import { ORDER_ATTRIBUTE, useReorderDrag } from '../hooks/useReorderDrag'
 
 type Step = 'pick' | 'settings'
@@ -15,6 +16,7 @@ type Step = 'pick' | 'settings'
 /** 学習セットの統合 (specs.md §4.9.2). 手順1 で選び, 手順2 で順番と出力先を決める */
 export function MergeScreen() {
   const { setId = '' } = useParams<{ setId: string }>()
+  const goBack = useGoBack(`/sets/${setId}`)
   // 読み込み中と「見つからない」を区別するため, 既定値を渡さずに undefined を受ける
   const loadedSets = useLiveQuery(() => listAllSets(), [])
   const folders = useLiveQuery(() => listFolders(), [], [] as Folder[])
@@ -166,9 +168,9 @@ export function MergeScreen() {
             </p>
           </div>
           <div className="screen__actions">
-            <Link className="btn" to={`/sets/${setId}`}>
+            <button type="button" className="btn" onClick={goBack}>
               戻る
-            </Link>
+            </button>
           </div>
         </header>
 
