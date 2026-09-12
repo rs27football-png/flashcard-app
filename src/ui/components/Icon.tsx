@@ -37,6 +37,8 @@ export type IconName =
   | 'copy'
   | 'merge'
   | 'split'
+  | 'image'
+  | 'math'
 
 /** 塗りではなく線で描くため, すべて d 属性のみで表せる */
 const PATHS: Record<IconName, string> = {
@@ -73,6 +75,9 @@ const PATHS: Record<IconName, string> = {
   copy: 'M11 9h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1',
   merge: 'M5 4l7 7 M19 4l-7 7 M12 11v10 M8 17l4 4 4-4',
   split: 'M12 3v9 M12 12l-7 7 M12 12l7 7 M5 14v5h5 M19 14v5h-5',
+  image:
+    'M21 5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z M9 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z M21 16l-5-5L6 21',
+  math: 'M19 4H6l6 8-6 8h13',
 }
 
 /** 点で表すアイコンは線端を丸めた極短線として描くため, 単独で塗りを持たせる */

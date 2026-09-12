@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import type {
+  Asset,
   Card,
   CardProgress,
   ProgressStatus,
@@ -8,6 +9,7 @@ import type {
   StudySession,
   StudySet,
 } from '../../core/types'
+import { listAssets } from '../../core/db/assets'
 import { listCards } from '../../core/db/cards'
 import { getSet, updateStudyOptions } from '../../core/db/sets'
 import { loadProgressMap, resetProgress, restoreStatus, setStatus } from '../../core/db/progress'
@@ -15,8 +17,11 @@ import { deleteSession, getSession, isSessionUsable, saveSession } from '../../c
 import { buildLearningQueue, buildQueue, shuffle, type EmptyReason } from '../../core/study/buildQueue'
 import { normalizeStudyOptions } from '../../core/study/options'
 import { Icon } from '../components/Icon'
+import { ImageViewer } from '../components/ImageViewer'
 import { Modal } from '../components/Modal'
+import { RichText } from '../components/RichText'
 import { StudyOptionsForm } from '../components/StudyOptionsForm'
+import { useAssetUrls } from '../hooks/useAssetUrls'
 
 /** これ以上動かしたら振り分けと見なす距離 (ピクセル) */
 const SWIPE_THRESHOLD = 80
@@ -55,6 +60,7 @@ export function StudyScreen() {
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' })
   const [set, setSet] = useState<StudySet | null>(null)
   const [cards, setCards] = useState<Card[]>([])
+  const [assets, setAssets] = useState<Asset[]>([])
   const [progress, setProgress] = useState<Map<string, CardProgress>>(new Map())
   const [options, setOptions] = useState<StudyOptions | null>(null)
   const [queue, setQueue] = useState<string[]>([])
@@ -79,6 +85,11 @@ export function StudyScreen() {
   const [held, setHeld] = useState(false)
   const dragStartRef = useRef<number | null>(null)
   const flyTimerRef = useRef<number | null>(null)
+  // 画像を叩いたのか, 札の余白を叩いたのかを見分ける. 前者は拡大, 後者は反転 (specs.md §4.6.2)
+  const tapTargetRef = useRef<Element | null>(null)
+  /** 全画面で見せている画像. null なら閉じている */
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null)
+  const assetUrls = useAssetUrls(assets)
 
   // 毎描画で作り直すと, これに依存する useCallback が無効になるため記憶しておく
   const cardById = useMemo(() => new Map(cards.map((card) => [card.id, card])), [cards])
@@ -106,6 +117,7 @@ export function StudyScreen() {
     const load = async () => {
       const loadedSet = await getSet(setId)
       const loadedCards = await listCards(setId)
+      const loadedAssets = await listAssets(setId)
       const progressMap = await loadProgressMap(setId)
       const session = await getSession(setId)
       if (cancelled) return
@@ -117,6 +129,7 @@ export function StudyScreen() {
       const loadedOptions = normalizeStudyOptions(loadedSet.studyOptions)
       setSet(loadedSet)
       setCards(loadedCards)
+      setAssets(loadedAssets)
       setProgress(progressMap)
       setOptions(loadedOptions)
 
@@ -542,6 +555,13 @@ export function StudyScreen() {
       : options.front === 'term'
         ? currentCard.definition
         : currentCard.term
+  const faceImageId =
+    currentCard === null || set === null || !set.enableImages
+      ? null
+      : (flipped ? options.front === 'definition' : options.front === 'term')
+        ? currentCard.termImageId
+        : currentCard.definitionImageId
+  const faceImageUrl = faceImageId === null ? null : (assetUrls.get(faceImageId) ?? null)
   const swipeProgress = Math.min(Math.abs(dragX) / SWIPE_THRESHOLD, 1)
   const swiping = swipeProgress >= 1
   const sideLabel = (showBack: boolean) =>
@@ -602,6 +622,8 @@ export function StudyScreen() {
             className="stack"
             onPointerDown={(event) => {
               event.currentTarget.setPointerCapture(event.pointerId)
+              // 掴んだ瞬間の対象を控える. 捕捉すると以降の対象は山に固定されるため
+              tapTargetRef.current = event.target instanceof Element ? event.target : null
               dragStartRef.current = event.clientX
               setHeld(true)
             }}
@@ -623,7 +645,12 @@ export function StudyScreen() {
                 commit(delta > 0)
               } else {
                 setDragX(0)
-                if (Math.abs(delta) < TAP_SLOP) setFlipped((previous) => !previous)
+                if (Math.abs(delta) < TAP_SLOP) {
+                  // 画像は拡大, 余白は反転に割り当てる (specs.md §4.6.2)
+                  const onImage = tapTargetRef.current?.closest('.study__image') != null
+                  if (onImage && faceImageUrl !== null) setViewerUrl(faceImageUrl)
+                  else setFlipped((previous) => !previous)
+                }
               }
             }}
             onPointerCancel={() => {
@@ -661,7 +688,17 @@ export function StudyScreen() {
               }}
             >
               <div className="study__face">
-                <p className="study__text">{flipped ? backText : frontText}</p>
+                {faceImageUrl !== null && (
+                  <img
+                    className="study__image"
+                    src={faceImageUrl}
+                    alt="カードの画像"
+                    draggable={false}
+                  />
+                )}
+                <p className="study__text">
+                  <RichText text={flipped ? backText : frontText} math={set?.enableMath ?? false} />
+                </p>
                 <span className="study__side">{sideLabel(flipped)}</span>
               </div>
               {swipeProgress > 0.2 && (
@@ -699,7 +736,9 @@ export function StudyScreen() {
         <div className="study__hint">
           {currentCard !== null && currentCard.hint !== '' ? (
             hintShown ? (
-              <p className="note">ヒント: {currentCard.hint}</p>
+              <p className="note">
+                ヒント: <RichText text={currentCard.hint} math={set?.enableMath ?? false} />
+              </p>
             ) : (
               <button
                 type="button"
@@ -737,6 +776,11 @@ export function StudyScreen() {
         → 知っている / ← 学習中 / Space 裏返す / Backspace 1つ戻る / S シャッフル / H ヒント /
         Esc 終了
       </p>
+
+      {/* 図表は縮小表示では字が読めないため, 叩いたら全画面で確かめられるようにする */}
+      {viewerUrl !== null && (
+        <ImageViewer src={viewerUrl} alt="カードの画像" onClose={() => setViewerUrl(null)} />
+      )}
 
       <ResetDialog
         open={confirmingReset}

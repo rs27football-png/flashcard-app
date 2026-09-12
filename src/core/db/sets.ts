@@ -176,3 +176,16 @@ export async function updateSetInfo(
     updatedAt: Date.now(),
   })
 }
+
+/**
+ * リッチコンテンツの有効・無効を切り替える (specs.md §4.4.1)。
+ *
+ * 無効にしてもカードの本文と画像は消さない。表示だけをプレーンに戻し、
+ * 再び有効にすれば元に戻る。誤操作でデータを失わない作りにするためである。
+ */
+export async function updateRichContent(
+  setId: string,
+  values: { enableImages: boolean; enableMath: boolean },
+): Promise<void> {
+  await db.sets.update(setId, { ...values, updatedAt: Date.now() })
+}

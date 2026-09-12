@@ -7,6 +7,7 @@ import { StudyScreen } from './ui/screens/StudyScreen'
 import { QuizScreen } from './ui/screens/QuizScreen'
 import { MergeScreen } from './ui/screens/MergeScreen'
 import { SplitScreen } from './ui/screens/SplitScreen'
+import { SetSettingsScreen } from './ui/screens/SetSettingsScreen'
 import { SearchScreen } from './ui/screens/SearchScreen'
 
 // GitHub Pages はサーバ側の書き換え設定を持たないため, BrowserRouter だと
@@ -18,6 +19,7 @@ export default function App() {
         <Route path="/" element={<HomeScreen />} />
         <Route path="/sets/:setId" element={<SetDetailScreen />} />
         <Route path="/sets/:setId/cards" element={<CardEditScreen />} />
+        <Route path="/sets/:setId/settings" element={<SetSettingsScreen />} />
         <Route path="/sets/:setId/study" element={<StudyScreen />} />
         <Route path="/sets/:setId/quiz" element={<QuizScreen />} />
         <Route path="/sets/:setId/merge" element={<MergeScreen />} />
