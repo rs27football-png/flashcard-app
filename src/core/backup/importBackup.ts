@@ -1,7 +1,8 @@
 // バックアップの取り込み (specs.md §4.11).
 import { unzip } from 'fflate'
-import type { Asset, Card, CardProgress, Folder, StudySet } from '../types'
+import type { Asset, AppSettings, Card, CardProgress, Folder, StudySet } from '../types'
 import { db, newId, nextOrder } from '../db/db'
+import { DEFAULT_APP_SETTINGS } from '../db/settings'
 import { buildCardNormalized } from '../search/normalize'
 import {
   ASSET_DIR,
@@ -13,6 +14,18 @@ import {
 
 /** 取り込み方式 (specs.md §4.11) */
 export type ImportMode = 'replace' | 'merge'
+
+export interface ImportOptions {
+  mode: ImportMode
+  /**
+   * この端末の学習状況と設定を残すか (specs.md §4.11).
+   *
+   * 写しの側の端末でも学習するため, 置き換えのたびに記録が消えては運用が続かない.
+   * カードの中身だけを入れ替え, 進捗・中断状態・設定はこの端末のものを維持する.
+   * マージは ID を採番し直して照合できないため, 置き換えのときだけ効く.
+   */
+  keepLocalState: boolean
+}
 
 function unzipAsync(bytes: Uint8Array): Promise<Record<string, Uint8Array>> {
   return new Promise((resolve, reject) => {
@@ -77,9 +90,12 @@ const SCOPE = [db.folders, db.sets, db.cards, db.progress, db.assets, db.session
  */
 export async function importBackup(
   content: BackupContent,
-  mode: ImportMode,
+  options: ImportOptions,
 ): Promise<ImportSummary> {
   const { data, files } = content
+  const { mode } = options
+  // マージは ID が変わるため照合が成立しない. 置き換えのときだけ効かせる
+  const keepLocal = mode === 'replace' && options.keepLocalState
   const now = Date.now()
 
   // 実体のある画像だけを Blob に起こす. 参照だけが残った画像は捨てる
@@ -92,6 +108,12 @@ export async function importBackup(
   }
 
   return db.transaction('rw', SCOPE, async () => {
+    // 消す前に控える. カードの ID で照合するため, 内容の入れ替えとは独立に扱える
+    const localProgress = keepLocal
+      ? new Map((await db.progress.toArray()).map((record) => [record.cardId, record]))
+      : new Map<string, CardProgress>()
+    const localSettings = keepLocal ? await db.settings.get('app') : undefined
+
     if (mode === 'replace') {
       await Promise.all([
         db.folders.clear(),
@@ -99,9 +121,10 @@ export async function importBackup(
         db.cards.clear(),
         db.progress.clear(),
         db.assets.clear(),
-        // 中断状態はキューの中身が消えた ID を指しうるため, 取り込みでは持ち越さない
-        db.sessions.clear(),
       ])
+      // 中断状態のキューは取り込み前の ID を指す. 進捗を残す場合だけ維持し,
+      // 指しているカードが現存するかは再開時に検証する (specs.md §2.6)
+      if (!keepLocal) await db.sessions.clear()
     }
 
     /** 置き換えでは元の ID をそのまま, マージでは採番し直す */
@@ -188,21 +211,33 @@ export async function importBackup(
     })
 
     // --- 進捗 ---
-    const progress: CardProgress[] = data.progress.map((record) => ({
-      ...record,
-      cardId: idOf(record.cardId),
-      setId: idOf(record.setId),
-    }))
+    // まずファイルの内容を敷き, その上からこの端末の記録を被せる.
+    // この順にすると, 手元に何もない端末への復元ではファイルの進捗がそのまま残る
+    let progressKept = 0
+    const progress: CardProgress[] = data.progress.map((record) => {
+      const cardId = idOf(record.cardId)
+      const local = localProgress.get(cardId)
+      if (local === undefined) return { ...record, cardId, setId: idOf(record.setId) }
+      progressKept += 1
+      return { ...local, cardId, setId: idOf(record.setId) }
+    })
 
     await db.folders.bulkPut(folders)
     await db.sets.bulkPut(sets)
     await db.assets.bulkPut(assets)
     await db.cards.bulkPut(cards)
     await db.progress.bulkPut(progress)
-    // 設定は復元のときだけ引き継ぐ. マージで今の設定を上書きすると驚きが大きい
-    if (mode === 'replace' && data.settings !== undefined) {
-      await db.settings.put({ ...data.settings, id: 'app', lastBackupAt: data.settings.lastBackupAt ?? now })
-    }
+    // 設定を戻すのは, この端末の状態を残さない置き換えのときだけ.
+    // 同期のたびに別の端末のテーマや既定値が持ち込まれるのを避ける
+    const base: AppSettings | undefined =
+      keepLocal || mode === 'merge' ? localSettings : data.settings
+    await db.settings.put({
+      ...DEFAULT_APP_SETTINGS,
+      ...base,
+      id: 'app',
+      // 取り込んだ時点で, この端末のデータは外部のファイルと一致している (specs.md §2.8)
+      lastImportAt: now,
+    })
 
     return {
       folders: folders.length,
@@ -210,6 +245,7 @@ export async function importBackup(
       cards: cards.length,
       assets: assets.length,
       cardsMissingImages,
+      progressKept,
     }
   })
 }

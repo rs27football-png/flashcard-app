@@ -137,7 +137,12 @@ export interface AppSettings {
   quizAffectsProgress: boolean
   /** 画像リサイズの長辺上限 */
   imageMaxEdge: number
+  /**
+   * 最後に書き出した日時, 最後に取り込んだ日時 (specs.md §2.8).
+   * どちらも「この端末のデータが外部のファイルと一致した時点」を表す.
+   */
   lastBackupAt: number | null
+  lastImportAt: number | null
 }
 
 /** セット詳細画面に表示する進捗サマリ (specs.md §4.2) */
