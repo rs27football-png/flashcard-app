@@ -13,7 +13,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
 
 /**
  * アプリ設定を読む. 保存されていない項目は既定値で補う.
- * 設定画面 (S9) を作るまでは何も保存されないため, 常に既定値が返る.
+ * 設定画面 (S9) で一度も触っていない項目は, 既定値のまま返る.
  */
 export async function getAppSettings(): Promise<AppSettings> {
   const stored = await db.settings.get('app')
