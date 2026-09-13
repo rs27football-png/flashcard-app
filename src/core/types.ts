@@ -49,9 +49,9 @@ export interface Card {
   definition: string
   /** ヒント. 0〜200文字, 任意 */
   hint: string
-  /** 表面の画像 (段階6 で使用) */
+  /** 表面の画像. 画像を有効にしたセットでのみ使う (specs.md §4.4.2) */
   termImageId: string | null
-  /** 裏面の画像 (段階6 で使用) */
+  /** 裏面の画像 */
   definitionImageId: string | null
   starred: boolean
   /** セット内の表示順 */
@@ -65,7 +65,7 @@ export interface Card {
   updatedAt: number
 }
 
-/** 画像 (specs.md §2.4). 段階6 で使用する */
+/** 画像 (specs.md §2.4) */
 export interface Asset {
   id: string
   /** 削除の連動と容量集計に用いる */
@@ -115,7 +115,7 @@ export interface QuizOptions {
   shuffle: boolean
 }
 
-/** 中断状態の保存 (specs.md §2.6). 段階3 で使用する */
+/** 中断状態の保存 (specs.md §2.6) */
 export interface StudySession {
   /** 主キー. セットごとに1件だけ保持する */
   setId: string

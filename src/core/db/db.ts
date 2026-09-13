@@ -15,9 +15,8 @@ import { DEFAULT_QUIZ_OPTIONS, DEFAULT_STUDY_OPTIONS } from '../study/options'
 /**
  * IndexedDB のスキーマ定義 (specs.md §2).
  *
- * 段階1 で用いるのは folders / sets / cards / progress の4つだが, テーブルは
- * 最初からすべて宣言する. 後から stores() に追加するとバージョンを上げる必要があり,
- * 既存データの移行処理を書くことになるため, 空のまま用意しておくほうが安い.
+ * テーブルは最初からすべて宣言してある. 後から stores() に足すと版を上げる必要があり,
+ * 既存データの移行処理を書くことになるため, 使う前から空で用意しておくほうが安い.
  */
 export const db = new Dexie('flashcard-app') as Dexie & {
   folders: EntityTable<Folder, 'id'>
