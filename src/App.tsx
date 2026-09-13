@@ -1,4 +1,6 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { DEFAULT_APP_SETTINGS, getAppSettings } from './core/db/settings'
 import { HomeScreen } from './ui/screens/HomeScreen'
 import { SetDetailScreen } from './ui/screens/SetDetailScreen'
 import { CardEditScreen } from './ui/screens/CardEditScreen'
@@ -8,11 +10,18 @@ import { QuizScreen } from './ui/screens/QuizScreen'
 import { MergeScreen } from './ui/screens/MergeScreen'
 import { SplitScreen } from './ui/screens/SplitScreen'
 import { SetSettingsScreen } from './ui/screens/SetSettingsScreen'
+import { SettingsScreen } from './ui/screens/SettingsScreen'
 import { SearchScreen } from './ui/screens/SearchScreen'
+import { UpdatePrompt } from './ui/components/UpdatePrompt'
+import { useTheme } from './ui/hooks/useTheme'
 
 // GitHub Pages はサーバ側の書き換え設定を持たないため, BrowserRouter だと
 // /flashcard-app/sets/xxx を再読み込みしたときに404になる. HashRouter を用いる.
 export default function App() {
+  // テーマは全画面に及ぶため, 画面ごとではなくここで一度だけ当てる (specs.md §4.12)
+  const settings = useLiveQuery(() => getAppSettings(), [], DEFAULT_APP_SETTINGS)
+  useTheme(settings.theme)
+
   return (
     <HashRouter>
       <Routes>
@@ -26,8 +35,10 @@ export default function App() {
         <Route path="/sets/:setId/split" element={<SplitScreen />} />
         <Route path="/search" element={<SearchScreen />} />
         <Route path="/import" element={<ImportScreen />} />
+        <Route path="/settings" element={<SettingsScreen />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <UpdatePrompt />
     </HashRouter>
   )
 }

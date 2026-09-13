@@ -44,3 +44,48 @@ export async function getRichContentUsage(setId: string): Promise<RichContentUsa
     mathCards,
   }
 }
+
+/** 使用容量の内訳 (specs.md §4.12) */
+export interface StorageUsage {
+  /** 画像の合計バイト数. 端末が総量を答えない場合はこれだけを示す */
+  assetBytes: number
+  assetCount: number
+  /** navigator.storage.estimate() の値. 非対応環境では null */
+  usage: number | null
+  quota: number | null
+  /** セットごとの内訳. 容量を食っているセットを見つけられるようにする */
+  perSet: { setId: string; name: string; bytes: number; count: number }[]
+}
+
+export async function getStorageUsage(): Promise<StorageUsage> {
+  const [assets, sets] = await Promise.all([db.assets.toArray(), db.sets.toArray()])
+  const nameById = new Map(sets.map((set) => [set.id, set.name]))
+
+  const totals = new Map<string, { bytes: number; count: number }>()
+  for (const asset of assets) {
+    const current = totals.get(asset.setId) ?? { bytes: 0, count: 0 }
+    totals.set(asset.setId, { bytes: current.bytes + asset.bytes, count: current.count + 1 })
+  }
+
+  let usage: number | null = null
+  let quota: number | null = null
+  if (typeof navigator !== 'undefined' && navigator.storage?.estimate !== undefined) {
+    const estimate = await navigator.storage.estimate()
+    usage = estimate.usage ?? null
+    quota = estimate.quota ?? null
+  }
+
+  return {
+    assetBytes: assets.reduce((total, asset) => total + asset.bytes, 0),
+    assetCount: assets.length,
+    usage,
+    quota,
+    perSet: [...totals.entries()]
+      .map(([setId, value]) => ({
+        setId,
+        name: nameById.get(setId) ?? '(削除されたセット)',
+        ...value,
+      }))
+      .sort((a, b) => b.bytes - a.bytes),
+  }
+}

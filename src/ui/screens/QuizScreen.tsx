@@ -61,6 +61,8 @@ export function QuizScreen() {
   const [options, setOptions] = useState<QuizOptions | null>(null)
   /** 4択の結果を進捗に反映するか (specs.md §2.8). 設定画面ができるまでは既定値 */
   const [affectsProgress, setAffectsProgress] = useState(true)
+  /** キー操作の案内を出すか (specs.md §4.12) */
+  const [showKeys, setShowKeys] = useState(true)
   const [questions, setQuestions] = useState<QuizQuestion[]>([])
   const [index, setIndex] = useState(0)
   /** 現在の問題で選んだ選択肢. 'pass' は「分かりませんか?」 */
@@ -113,6 +115,7 @@ export function QuizScreen() {
       setAssets(loadedAssets)
       setOptions(quizOptions)
       setAffectsProgress(settings.quizAffectsProgress)
+      setShowKeys(settings.showShortcutHints)
       await build(loadedCards, quizOptions)
     }
     void load()
@@ -366,9 +369,11 @@ export function QuizScreen() {
         <ImageViewer src={viewerUrl} alt="問題文の画像" onClose={() => setViewerUrl(null)} />
       )}
 
-      <p className="hint study__keys">
-        1〜{question?.choices.length ?? 4} 選択 / Enter 次へ / Esc 終了
-      </p>
+      {showKeys && (
+        <p className="hint study__keys">
+          1〜{question?.choices.length ?? 4} 選択 / Enter 次へ / Esc 終了
+        </p>
+      )}
     </div>
   )
 }

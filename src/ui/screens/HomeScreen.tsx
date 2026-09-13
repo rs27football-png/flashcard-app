@@ -112,6 +112,10 @@ export function HomeScreen() {
       <header className="screen__head">
         <h1 className="screen__title">単語帳アプリ</h1>
         <div className="screen__actions">
+          {/* 使う頻度が低いためアイコンだけにして, 作成の導線を主役にする */}
+          <Link className="btn btn--tool" to="/settings" aria-label="設定" title="設定">
+            <Icon name="settings" size={19} />
+          </Link>
           <Link className="btn" to="/import">
             <Icon name="import" />
             インポート

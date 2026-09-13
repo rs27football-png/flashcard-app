@@ -14,6 +14,7 @@ import { listCards } from '../../core/db/cards'
 import { getSet, updateStudyOptions } from '../../core/db/sets'
 import { loadProgressMap, resetProgress, restoreStatus, setStatus } from '../../core/db/progress'
 import { deleteSession, getSession, isSessionUsable, saveSession } from '../../core/db/sessions'
+import { getAppSettings } from '../../core/db/settings'
 import { buildLearningQueue, buildQueue, shuffle, type EmptyReason } from '../../core/study/buildQueue'
 import { normalizeStudyOptions } from '../../core/study/options'
 import { Icon } from '../components/Icon'
@@ -61,6 +62,8 @@ export function StudyScreen() {
   const [set, setSet] = useState<StudySet | null>(null)
   const [cards, setCards] = useState<Card[]>([])
   const [assets, setAssets] = useState<Asset[]>([])
+  /** キー操作の案内を出すか (specs.md §4.12) */
+  const [showKeys, setShowKeys] = useState(true)
   const [progress, setProgress] = useState<Map<string, CardProgress>>(new Map())
   const [options, setOptions] = useState<StudyOptions | null>(null)
   const [queue, setQueue] = useState<string[]>([])
@@ -118,6 +121,7 @@ export function StudyScreen() {
       const loadedSet = await getSet(setId)
       const loadedCards = await listCards(setId)
       const loadedAssets = await listAssets(setId)
+      const settings = await getAppSettings()
       const progressMap = await loadProgressMap(setId)
       const session = await getSession(setId)
       if (cancelled) return
@@ -130,6 +134,7 @@ export function StudyScreen() {
       setSet(loadedSet)
       setCards(loadedCards)
       setAssets(loadedAssets)
+      setShowKeys(settings.showShortcutHints)
       setProgress(progressMap)
       setOptions(loadedOptions)
 
@@ -772,10 +777,12 @@ export function StudyScreen() {
         </button>
       </div>
 
-      <p className="hint study__keys">
-        → 知っている / ← 学習中 / Space 裏返す / Backspace 1つ戻る / S シャッフル / H ヒント /
-        Esc 終了
-      </p>
+      {showKeys && (
+        <p className="hint study__keys">
+          → 知っている / ← 学習中 / Space 裏返す / Backspace 1つ戻る / S シャッフル / H ヒント /
+          Esc 終了
+        </p>
+      )}
 
       {/* 図表は縮小表示では字が読めないため, 叩いたら全画面で確かめられるようにする */}
       {viewerUrl !== null && (

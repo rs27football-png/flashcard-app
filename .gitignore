@@ -5,6 +5,8 @@ node_modules/
 dist/
 dist-ssr/
 .vite/
+# vite-plugin-pwa が開発用に吐く Service Worker
+dev-dist/
 
 # 環境変数
 .env
