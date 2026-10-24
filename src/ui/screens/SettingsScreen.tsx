@@ -55,6 +55,11 @@ export function SettingsScreen() {
   /** 読み込んだファイルの中身. 取り込み方式を選ぶまで持っておく */
   const [pending, setPending] = useState<BackupContent | null>(null)
   const [confirmingReplace, setConfirmingReplace] = useState(false)
+  /**
+   * 置き換えでこの端末の学習状況と設定を残すか (specs.md §4.11).
+   * 誤って外したときの損害のほうが大きいため, 既定は有効にしておく.
+   */
+  const [keepLocalState, setKeepLocalState] = useState(true)
   const [result, setResult] = useState<ImportSummary | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -103,7 +108,7 @@ export function SettingsScreen() {
     setBusy('import')
     setError(null)
     try {
-      const summary = await importBackup(pending, mode)
+      const summary = await importBackup(pending, { mode, keepLocalState })
       setResult(summary)
       setPending(null)
       setConfirmingReplace(false)
@@ -239,6 +244,11 @@ export function SettingsScreen() {
               <li className="usage__item">カード {result.cards} 枚</li>
               <li className="usage__item">画像 {result.assets} 枚</li>
             </ul>
+            {result.progressKept > 0 && (
+              <p className="note">
+                この端末の学習状況を {result.progressKept} 枚のカードに引き継ぎました。
+              </p>
+            )}
             {result.cardsMissingImages > 0 && (
               <p className="note">
                 画像を含まないファイルだったため、{result.cardsMissingImages}{' '}
@@ -313,6 +323,14 @@ export function SettingsScreen() {
                 <Icon name="merge" size={16} />
                 今のデータに追加する
               </button>
+              {/*
+                マージは ID を採番し直すため, 以後この端末の進捗を引き継げなくなる.
+                端末間で揃える用途では使わないことを, 選ぶ前に伝える (specs.md §4.11)
+              */}
+              <p className="note">
+                別の端末と揃えるときは「置き換える」を使ってください。「追加する」で取り込むと、
+                以後この端末の学習状況を引き継げなくなります。
+              </p>
               <button
                 type="button"
                 className="btn btn--danger"
@@ -337,10 +355,24 @@ export function SettingsScreen() {
         onClose={() => setConfirmingReplace(false)}
       >
         <div className="form">
-          <p>
-            この端末にある<strong>フォルダ・学習セット・カード・画像・進捗をすべて削除</strong>
-            してから、ファイルの中身を復元します。元に戻すことはできません。
-          </p>
+          {keepLocalState ? (
+            <p>
+              この端末の<strong>フォルダ・学習セット・カード・画像を、ファイルの中身に入れ替えます</strong>
+              。覚えた・学習中の記録はそのまま残ります。元に戻すことはできません。
+            </p>
+          ) : (
+            <p>
+              この端末にある<strong>フォルダ・学習セット・カード・画像・進捗をすべて削除</strong>
+              してから、ファイルの中身を復元します。元に戻すことはできません。
+            </p>
+          )}
+          {/* 写しの側の端末でも学習するため, 既定では記録を残す (specs.md §4.11) */}
+          <Toggle
+            label="この端末の学習状況と設定を残す"
+            description="カードの中身だけを入れ替えます。外すと、進捗も設定もファイルのものになります。"
+            checked={keepLocalState}
+            onChange={setKeepLocalState}
+          />
           <p className="note">
             心配な場合は、先に「書き出す」で今のデータを保存してから実行してください。
           </p>

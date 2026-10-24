@@ -9,6 +9,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   quizAffectsProgress: true,
   imageMaxEdge: 1600,
   lastBackupAt: null,
+  lastImportAt: null,
 }
 
 /**

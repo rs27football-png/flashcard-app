@@ -101,6 +101,8 @@ export interface ImportSummary {
   assets: number
   /** 実体が見つからず「画像なし」として取り込んだカード数 (specs.md §4.11) */
   cardsMissingImages: number
+  /** この端末の学習状況を引き継いだカード数 (specs.md §4.11) */
+  progressKept: number
 }
 
 export interface BackupContent {
