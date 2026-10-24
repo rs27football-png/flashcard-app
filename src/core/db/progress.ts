@@ -34,7 +34,7 @@ export async function resetProgress(setId: string): Promise<void> {
       .where('setId')
       .equals(setId)
       .modify({ status: 'unseen', lastAnsweredAt: null })
-    await db.sessions.delete(setId)
+    await db.sessions.where('setId').equals(setId).delete()
   })
 }
 

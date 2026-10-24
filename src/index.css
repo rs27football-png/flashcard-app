@@ -2505,3 +2505,44 @@ label.btn {
 .quiz__star:active {
   background-color: color-mix(in srgb, var(--fg) 10%, transparent);
 }
+
+
+/* ---- ★の塗りつぶし (specs.md §4.8) ---- */
+
+/*
+ * アイコンは線だけで描いているが, ★は付いているかどうかを一目で分けたい.
+ * 輪郭の色だけでは小さい表示で判別しにくいため, 付いている間は中も塗る.
+ */
+.star--on .icon {
+  fill: currentColor;
+}
+
+/* ---- 判定後に選択肢を裏返す (specs.md §4.7.3) ---- */
+
+.choice--flipped {
+  /* 表示が反対側に入れ替わっていることを, 枠の破線で示す */
+  border-style: dashed;
+}
+
+/* 判定後も押せるままにしてあるため, 指した際に判定の色が消えないようにする */
+.choice--correct:hover:not(:disabled) {
+  border-color: var(--known);
+}
+
+.choice--wrong:hover:not(:disabled) {
+  border-color: var(--danger);
+}
+
+.choice--dim:hover:not(:disabled) {
+  border-color: var(--border);
+}
+
+.choice__side {
+  flex: 0 0 auto;
+  color: var(--fg-muted);
+  font-size: 0.6875rem;
+}
+
+.quiz__flip-hint {
+  text-align: center;
+}

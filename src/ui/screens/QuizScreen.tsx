@@ -1,15 +1,29 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import type { Asset, Card, QuizOptions, StudySet } from '../../core/types'
+import type {
+  Asset,
+  Card,
+  QuizAnswerRecord,
+  QuizOptions,
+  QuizSession,
+  StudySet,
+} from '../../core/types'
 import { listAssets } from '../../core/db/assets'
 import { listCards, setStarred } from '../../core/db/cards'
 import { getSet } from '../../core/db/sets'
 import { loadProgressMap, recordQuizAnswer } from '../../core/db/progress'
 import { getAppSettings } from '../../core/db/settings'
+import {
+  deleteSession,
+  getSession,
+  isQuizSessionUsable,
+  saveSession,
+} from '../../core/db/sessions'
 import { normalizeQuizOptions } from '../../core/study/options'
 import {
   buildQuestionsFor,
   buildQuiz,
+  rebuildQuestions,
   type QuizEmptyReason,
   type QuizQuestion,
 } from '../../core/study/quiz'
@@ -22,16 +36,10 @@ type Phase =
   | { kind: 'loading' }
   | { kind: 'missing' }
   | { kind: 'empty'; reason: QuizEmptyReason }
+  /** 中断が残っている. 組み直した問題を添えて持つ (specs.md §4.7.4) */
+  | { kind: 'resume'; session: QuizSession; questions: QuizQuestion[] }
   | { kind: 'quiz' }
   | { kind: 'result' }
-
-/** 1問ぶんの解答. 結果画面の誤答一覧に用いる (specs.md §4.7.4) */
-interface AnswerRecord {
-  question: QuizQuestion
-  /** 選んだ選択肢の文言. パスなら null */
-  chosen: string | null
-  correct: boolean
-}
 
 const EMPTY_MESSAGE: Record<QuizEmptyReason, string> = {
   'too-few-cards': 'カードが2枚未満のため、4択モードを始められません。',
@@ -67,20 +75,28 @@ export function QuizScreen() {
   const [index, setIndex] = useState(0)
   /** 現在の問題で選んだ選択肢. 'pass' は「分かりませんか?」 */
   const [selected, setSelected] = useState<number | 'pass' | null>(null)
-  const [answers, setAnswers] = useState<AnswerRecord[]>([])
+  const [answers, setAnswers] = useState<QuizAnswerRecord[]>([])
+  /** 判定後に裏返している選択肢の位置 (specs.md §4.7.3). 問題ごとに空に戻す */
+  const [flipped, setFlipped] = useState<ReadonlySet<number>>(new Set())
   const [skipped, setSkipped] = useState({ empty: 0, noDistractor: 0 })
   const [startedAt, setStartedAt] = useState(0)
   const [finishedAt, setFinishedAt] = useState(0)
 
-  const startWith = useCallback((next: QuizQuestion[]) => {
-    setQuestions(next)
-    setIndex(0)
-    setSelected(null)
-    setAnswers([])
-    setStartedAt(Date.now())
-    setFinishedAt(0)
-    setPhase({ kind: 'quiz' })
-  }, [])
+  const startWith = useCallback(
+    (next: QuizQuestion[]) => {
+      setQuestions(next)
+      setIndex(0)
+      setSelected(null)
+      setFlipped(new Set())
+      setAnswers([])
+      setStartedAt(Date.now())
+      setFinishedAt(0)
+      setPhase({ kind: 'quiz' })
+      // 新しく始めた時点で, 前の中断は意味を失う
+      void deleteSession(setId, 'quiz')
+    },
+    [setId],
+  )
 
   /** 出題を組む. 「学習中のみ」は解答で状態が変わるため, 組むたびに進捗を読み直す */
   const build = useCallback(
@@ -116,6 +132,22 @@ export function QuizScreen() {
       setOptions(quizOptions)
       setAffectsProgress(settings.quizAffectsProgress)
       setShowKeys(settings.showShortcutHints)
+
+      // 中断が残っていれば, 続きから始められるようにする (specs.md §4.7.4)
+      const session = await getSession(setId, 'quiz')
+      const existingIds = new Set(loadedCards.map((card) => card.id))
+      if (session !== undefined && isQuizSessionUsable(session, existingIds, quizOptions)) {
+        const byId = new Map(loadedCards.map((card) => [card.id, card]))
+        const ordered = session.queue
+          .map((cardId) => byId.get(cardId))
+          .filter((card): card is Card => card !== undefined)
+        const restored = rebuildQuestions(ordered, loadedCards, quizOptions.front)
+        // 出題できなくなったカードがあると位置がずれる. そのときは再開を出さない
+        if (restored.length === session.queue.length) {
+          setPhase({ kind: 'resume', session, questions: restored })
+          return
+        }
+      }
       await build(loadedCards, quizOptions)
     }
     void load()
@@ -144,19 +176,38 @@ export function QuizScreen() {
 
   const choose = useCallback(
     (choice: number | 'pass') => {
-      if (question === null || selected !== null) return
+      if (question === null || selected !== null || options === null) return
       if (typeof choice === 'number' && choice >= question.choices.length) return
       const picked = choice === 'pass' ? null : question.choices[choice]
       const correct = picked?.correct === true
+      const record: QuizAnswerRecord = {
+        cardId: question.cardId,
+        prompt: question.prompt,
+        answer: question.answer,
+        chosen: picked?.text ?? null,
+        correct,
+      }
       setSelected(choice)
-      setAnswers((previous) => [
-        ...previous,
-        { question, chosen: picked?.text ?? null, correct },
-      ])
+      setAnswers((previous) => [...previous, record])
       // 1回の正答で習得済, 誤答とパスで学習中 (specs.md §4.7.3)
       if (affectsProgress) void recordQuizAnswer(question.cardId, correct)
+
+      // 1問ごとに中断状態を書き戻す. 閉じた時点までを再開できるようにするため
+      const nextIndex = index + 1
+      if (nextIndex < questions.length) {
+        void saveSession({
+          setId,
+          mode: 'quiz',
+          options,
+          queue: questions.map((item) => item.cardId),
+          currentIndex: nextIndex,
+          answers: [...answers, record],
+          // 閉じていた時間を含めないよう, 時刻ではなく経過時間で持つ
+          elapsedMs: Date.now() - startedAt,
+        })
+      }
     },
-    [question, selected, affectsProgress],
+    [question, selected, options, affectsProgress, index, questions, answers, startedAt, setId],
   )
 
   const next = useCallback(() => {
@@ -164,11 +215,24 @@ export function QuizScreen() {
     if (index + 1 >= questions.length) {
       setFinishedAt(Date.now())
       setPhase({ kind: 'result' })
+      // 1周したので中断は残さない (specs.md §2.6)
+      void deleteSession(setId, 'quiz')
       return
     }
     setIndex((previous) => previous + 1)
     setSelected(null)
-  }, [selected, index, questions.length])
+    setFlipped(new Set())
+  }, [selected, index, questions.length, setId])
+
+  /** 判定後に誤答の選択肢を裏返す (specs.md §4.7.3) */
+  const toggleFlip = useCallback((choiceIndex: number) => {
+    setFlipped((previous) => {
+      const nextSet = new Set(previous)
+      if (nextSet.has(choiceIndex)) nextSet.delete(choiceIndex)
+      else nextSet.add(choiceIndex)
+      return nextSet
+    })
+  }, [])
 
   // キーボード操作 (specs.md §5.2).
   // 暗記モードと同じく, 購読は出題中に1回だけ張り, 中身は最新の処理を参照する.
@@ -235,6 +299,46 @@ export function QuizScreen() {
     )
   }
 
+  // 中断が残っている場合は, 続きからか最初からかを選ばせる (specs.md §4.7.4)
+  if (phase.kind === 'resume') {
+    const session = phase.session
+    const restored = phase.questions
+    return (
+      <div className="screen">
+        <h1 className="screen__title">{set.name}</h1>
+        <p className="note">
+          前回の続きが残っています ({session.queue.length} 問中 {session.currentIndex} 問まで)。
+        </p>
+        <div className="form__actions">
+          <button
+            type="button"
+            className="btn"
+            onClick={() => void build(cards, options)}
+          >
+            最初から始める
+          </button>
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={() => {
+              setQuestions(restored)
+              setIndex(session.currentIndex)
+              setSelected(null)
+              setFlipped(new Set())
+              setAnswers(session.answers)
+              // 中断前の経過時間を引いた時刻を起点に置き直し, 続きを計り足す
+              setStartedAt(Date.now() - session.elapsedMs)
+              setFinishedAt(0)
+              setPhase({ kind: 'quiz' })
+            }}
+          >
+            続きから
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   if (phase.kind === 'result') {
     return (
       <QuizResult
@@ -243,7 +347,7 @@ export function QuizScreen() {
         durationMs={finishedAt - startedAt}
         onRetryWrong={() => {
           const wrongIds = new Set(
-            answers.filter((record) => !record.correct).map((record) => record.question.cardId),
+            answers.filter((record) => !record.correct).map((record) => record.cardId),
           )
           startWith(
             buildQuestionsFor(
@@ -339,16 +443,22 @@ export function QuizScreen() {
                   : selected === choiceIndex
                     ? 'choice--wrong'
                     : 'choice--dim'
+              // 判定後は誤答を裏返せる. 正答の反対側は問題文として出ているため除く
+              const flippable = answered && !choice.correct && choice.flipText !== ''
+              const isFlipped = flipped.has(choiceIndex)
               return (
                 <li key={choiceIndex}>
                   <button
                     type="button"
-                    className={`choice ${state}`}
-                    disabled={answered}
-                    onClick={() => choose(choiceIndex)}
+                    className={`choice ${state} ${isFlipped ? 'choice--flipped' : ''}`}
+                    // 判定後も押せるようにしておき, 解答としては choose 側で弾く
+                    disabled={answered && !flippable}
+                    aria-pressed={flippable ? isFlipped : undefined}
+                    title={flippable ? '裏返す' : undefined}
+                    onClick={() => (answered ? toggleFlip(choiceIndex) : choose(choiceIndex))}
                   >
                     <span className="choice__num">{choiceIndex + 1}</span>
-                    {set?.enableImages === true && choice.imageId !== null && (
+                    {set?.enableImages === true && choice.imageId !== null && !isFlipped && (
                       <img
                         className="choice__thumb"
                         src={assetUrls.get(choice.imageId)}
@@ -356,8 +466,12 @@ export function QuizScreen() {
                       />
                     )}
                     <span className="choice__text">
-                      <RichText text={choice.text} math={set?.enableMath ?? false} />
+                      <RichText
+                        text={isFlipped ? choice.flipText : choice.text}
+                        math={set?.enableMath ?? false}
+                      />
                     </span>
+                    {isFlipped && <span className="choice__side">{promptSide}</span>}
                     {answered && choice.correct && (
                       <Icon name="check" size={18} className="choice__mark" />
                     )}
@@ -369,6 +483,13 @@ export function QuizScreen() {
               )
             })}
           </ol>
+
+          {/* 知らないと気づけない操作なので, 判定後に一度だけ添える */}
+          {answered && (
+            <p className="hint quiz__flip-hint">
+              誤答の選択肢を押すと、その{promptSide}が出ます。
+            </p>
+          )}
 
           {answered ? (
             <div
@@ -408,7 +529,7 @@ export function QuizScreen() {
 
 interface QuizResultProps {
   set: StudySet
-  answers: readonly AnswerRecord[]
+  answers: readonly QuizAnswerRecord[]
   durationMs: number
   onRetryWrong: () => void
   onRepeat: () => void
@@ -450,12 +571,12 @@ function QuizResult({ set, answers, durationMs, onRetryWrong, onRepeat }: QuizRe
             {wrong.map((record, recordIndex) => (
               <li key={recordIndex} className="wrong-item">
                 <p className="wrong-item__prompt">
-                  <RichText text={record.question.prompt} math={set.enableMath} />
+                  <RichText text={record.prompt} math={set.enableMath} />
                 </p>
                 <dl className="wrong-item__rows">
                   <dt>正答</dt>
                   <dd className="wrong-item__answer">
-                    <RichText text={record.question.answer} math={set.enableMath} />
+                    <RichText text={record.answer} math={set.enableMath} />
                   </dd>
                   <dt>選んだ解答</dt>
                   <dd className="wrong-item__chosen">

@@ -73,7 +73,7 @@ export async function deleteSet(id: string): Promise<void> {
     db.sessions,
     async () => {
       await deleteCardsOfSet(id)
-      await db.sessions.delete(id)
+      await db.sessions.where('setId').equals(id).delete()
       await db.sets.delete(id)
     },
   )
