@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import type { Asset, Card, QuizOptions, StudySet } from '../../core/types'
 import { listAssets } from '../../core/db/assets'
-import { listCards } from '../../core/db/cards'
+import { listCards, setStarred } from '../../core/db/cards'
 import { getSet } from '../../core/db/sets'
 import { loadProgressMap, recordQuizAnswer } from '../../core/db/progress'
 import { getAppSettings } from '../../core/db/settings'
@@ -126,6 +126,20 @@ export function QuizScreen() {
 
   const assetUrls = useAssetUrls(assets)
   const question = questions[index] ?? null
+  const currentCard = question === null ? null : (cards.find((card) => card.id === question.cardId) ?? null)
+
+  /**
+   * 今解いている問題のカードの★を切り替える (specs.md §4.8)。
+   * 出題中のキューは組み直さない。解いている最中に問題が入れ替わるのを避けるため。
+   */
+  const toggleStar = useCallback(async () => {
+    if (currentCard === null) return
+    const next = !currentCard.starred
+    await setStarred(currentCard.id, next)
+    setCards((previous) =>
+      previous.map((card) => (card.id === currentCard.id ? { ...card, starred: next } : card)),
+    )
+  }, [currentCard])
   const answered = selected !== null
 
   const choose = useCallback(
@@ -176,6 +190,8 @@ export function QuizScreen() {
       } else if (event.key === 'Escape') {
         event.preventDefault()
         navigate(`/sets/${setId}`)
+      } else if (event.key === 'f' || event.key === 'F') {
+        void toggleStar()
       }
     }
   })
@@ -280,6 +296,18 @@ export function QuizScreen() {
         <>
           <section className="quiz__prompt">
             <span className="quiz__side">{promptSide}</span>
+            {/* 解いている最中に印を付けられるようにする (specs.md §4.8) */}
+            {currentCard !== null && (
+              <button
+                type="button"
+                className={`star quiz__star ${currentCard.starred ? 'star--on' : ''}`}
+                aria-label={currentCard.starred ? '★を外す' : '★を付ける'}
+                aria-pressed={currentCard.starred}
+                onClick={() => void toggleStar()}
+              >
+                <Icon name="star" size={20} />
+              </button>
+            )}
             {set?.enableImages === true && question.promptImageId !== null && (
               <img
                 className="quiz__image"

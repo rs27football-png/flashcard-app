@@ -1478,6 +1478,8 @@ body {
 }
 
 .quiz__prompt {
+  /* 右上の★を置くための基準にする */
+  position: relative;
   padding: 1.25rem 1rem;
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -2475,4 +2477,31 @@ label.btn {
   gap: 0.375rem;
   justify-content: flex-end;
   margin-top: 0.625rem;
+}
+
+
+/* ---- 学習中の★ (specs.md §4.8) ---- */
+
+/*
+ * 一覧の★と同じ見た目を使いつつ, 置き方だけを変える.
+ * 指で狙う操作になるため, 一覧より大きく取る.
+ */
+.study__star,
+.quiz__star {
+  display: flex;
+  position: absolute;
+  z-index: 2;
+  top: 0.5rem;
+  right: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  min-height: 0;
+  border-radius: 50%;
+}
+
+.study__star:active,
+.quiz__star:active {
+  background-color: color-mix(in srgb, var(--fg) 10%, transparent);
 }

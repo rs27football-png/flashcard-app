@@ -10,7 +10,7 @@ import type {
   StudySet,
 } from '../../core/types'
 import { listAssets } from '../../core/db/assets'
-import { listCards } from '../../core/db/cards'
+import { listCards, setStarred } from '../../core/db/cards'
 import { getSet, updateStudyOptions } from '../../core/db/sets'
 import { loadProgressMap, resetProgress, restoreStatus, setStatus } from '../../core/db/progress'
 import { deleteSession, getSession, isSessionUsable, saveSession } from '../../core/db/sessions'
@@ -353,6 +353,22 @@ export function StudyScreen() {
     [currentCard, options, flipped, dragX, answer],
   )
 
+  /**
+   * 今めくっているカードの★を切り替える (specs.md §4.8)。
+   *
+   * 学習中は意図的にライブクエリを使っていないため, 書き込みに加えて
+   * 手元の一覧も直す。出題中のキューは組み直さない。解いている最中に
+   * 中身が入れ替わるのを避けるためである。
+   */
+  const toggleStar = useCallback(async () => {
+    if (currentCard === null) return
+    const next = !currentCard.starred
+    await setStarred(currentCard.id, next)
+    setCards((previous) =>
+      previous.map((card) => (card.id === currentCard.id ? { ...card, starred: next } : card)),
+    )
+  }, [currentCard])
+
   const restart = useCallback(async () => {
     if (options === null) return
     await resetProgress(setId)
@@ -408,6 +424,7 @@ export function StudyScreen() {
         default:
           if (event.key === 's' || event.key === 'S') toggleShuffle()
           if (event.key === 'h' || event.key === 'H') setHintShown(true)
+          if (event.key === 'f' || event.key === 'F') void toggleStar()
       }
     }
   })
@@ -651,9 +668,11 @@ export function StudyScreen() {
               } else {
                 setDragX(0)
                 if (Math.abs(delta) < TAP_SLOP) {
-                  // 画像は拡大, 余白は反転に割り当てる (specs.md §4.6.2)
-                  const onImage = tapTargetRef.current?.closest('.study__image') != null
-                  if (onImage && faceImageUrl !== null) setViewerUrl(faceImageUrl)
+                  // 画像は拡大, ★は切り替え, 余白は反転に割り当てる (specs.md §4.6.2)
+                  const tapped = tapTargetRef.current
+                  const onImage = tapped?.closest('.study__image') != null
+                  if (tapped?.closest('.study__star') != null) void toggleStar()
+                  else if (onImage && faceImageUrl !== null) setViewerUrl(faceImageUrl)
                   else setFlipped((previous) => !previous)
                 }
               }
@@ -692,6 +711,30 @@ export function StudyScreen() {
                   : undefined,
               }}
             >
+              {/*
+                覚えにくい語にその場で印を付けられるようにする (specs.md §4.8).
+
+                指やマウスでの切り替えは, 上の pointerup でまとめて扱う. 札の全体が
+                ドラッグ面であり, 掴んだ時点でポインタが捕捉されるため, click は
+                ボタンではなく札に届いてしまうためである. ここではキーボードから
+                操作した場合だけを受ける.
+              */}
+              <button
+                type="button"
+                className={`star study__star ${currentCard.starred ? 'star--on' : ''}`}
+                aria-label={currentCard.starred ? '★を外す' : '★を付ける'}
+                aria-pressed={currentCard.starred}
+                onKeyDown={(event) => {
+                  if (event.key !== 'Enter' && event.key !== ' ') return
+                  // Space は画面全体では反転に割り当てている. ここでは奪って★に使う
+                  event.preventDefault()
+                  event.stopPropagation()
+                  void toggleStar()
+                }}
+              >
+                <Icon name="star" size={20} />
+              </button>
+
               <div className="study__face">
                 {faceImageUrl !== null && (
                   <img
