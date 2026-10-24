@@ -1,4 +1,4 @@
-import Dexie, { type EntityTable } from 'dexie'
+import Dexie, { type EntityTable, type Table } from 'dexie'
 import type {
   AppSettings,
   Asset,
@@ -24,7 +24,8 @@ export const db = new Dexie('flashcard-app') as Dexie & {
   cards: EntityTable<Card, 'id'>
   assets: EntityTable<Asset, 'id'>
   progress: EntityTable<CardProgress, 'cardId'>
-  sessions: EntityTable<StudySession, 'setId'>
+  // 主キーは [setId+mode] の組. EntityTable は単一の主キーしか表せないため Table を使う
+  sessions: Table<StudySession, [string, StudySession['mode']]>
   settings: EntityTable<AppSettings, 'id'>
 }
 
@@ -62,6 +63,13 @@ db.version(3).upgrade(async (tx) => {
       set.quizOptions ??= DEFAULT_QUIZ_OPTIONS
     })
 })
+
+// v4.4 で中断状態の主キーを setId から [setId+mode] の組に変えた. 暗記モードと
+// 4択モードの中断を同時に持てるようにするためである (specs.md §2.6).
+// Dexie では主キーの変更に表の作り直しが要る. 中断状態は学習中の一時的な値で,
+// 失っても学習データ自体には影響しないため, 作り直して捨てる.
+db.version(4).stores({ sessions: null })
+db.version(5).stores({ sessions: '[setId+mode], setId' })
 
 /** ID の採番. specs.md の規約により crypto.randomUUID() を用いる */
 export function newId(): string {

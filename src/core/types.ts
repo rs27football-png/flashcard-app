@@ -115,18 +115,48 @@ export interface QuizOptions {
   shuffle: boolean
 }
 
-/** 中断状態の保存 (specs.md §2.6) */
-export interface StudySession {
-  /** 主キー. セットごとに1件だけ保持する */
+/** 4択モードの1問ぶんの解答. 中断から再開したときに結果画面を復元するために持つ (specs.md §2.6) */
+export interface QuizAnswerRecord {
+  cardId: string
+  prompt: string
+  answer: string
+  /** 選んだ選択肢の文言. パスなら null */
+  chosen: string | null
+  correct: boolean
+}
+
+interface SessionBase {
+  /** mode との組で主キーになる. 1つのセットにつき各モード1件ずつ持つ */
   setId: string
-  mode: 'flashcard' | 'quiz'
-  options: StudyOptions
   /** 出題順のカードID配列 */
   queue: string[]
   currentIndex: number
-  roundNumber: number
   updatedAt: number
 }
+
+export interface FlashcardSession extends SessionBase {
+  mode: 'flashcard'
+  options: StudyOptions
+  roundNumber: number
+}
+
+export interface QuizSession extends SessionBase {
+  mode: 'quiz'
+  options: QuizOptions
+  /** 解き終えた分の記録 (specs.md §4.7.4) */
+  answers: QuizAnswerRecord[]
+  /**
+   * ここまでに解くのに要した時間. 起点の時刻ではなく経過時間を持つ.
+   * 時刻で持つと, アプリを閉じていた時間まで所要時間に含まれてしまうためである.
+   */
+  elapsedMs: number
+}
+
+/**
+ * 中断状態の保存 (specs.md §2.6).
+ * モードによって必要な項目が異なるため, mode で判別する2種とする.
+ */
+export type StudySession = FlashcardSession | QuizSession
 
 /** アプリ設定 (specs.md §2.8). 単一レコードとして保存する */
 export interface AppSettings {

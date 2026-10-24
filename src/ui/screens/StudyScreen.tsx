@@ -4,16 +4,21 @@ import type {
   Asset,
   Card,
   CardProgress,
+  FlashcardSession,
   ProgressStatus,
   StudyOptions,
-  StudySession,
   StudySet,
 } from '../../core/types'
 import { listAssets } from '../../core/db/assets'
 import { listCards, setStarred } from '../../core/db/cards'
 import { getSet, updateStudyOptions } from '../../core/db/sets'
 import { loadProgressMap, resetProgress, restoreStatus, setStatus } from '../../core/db/progress'
-import { deleteSession, getSession, isSessionUsable, saveSession } from '../../core/db/sessions'
+import {
+  deleteSession,
+  getSession,
+  isFlashcardSessionUsable,
+  saveSession,
+} from '../../core/db/sessions'
 import { getAppSettings } from '../../core/db/settings'
 import { buildLearningQueue, buildQueue, shuffle, type EmptyReason } from '../../core/study/buildQueue'
 import { normalizeStudyOptions } from '../../core/study/options'
@@ -35,7 +40,7 @@ type Phase =
   | { kind: 'loading' }
   | { kind: 'missing' }
   | { kind: 'empty'; reason: EmptyReason }
-  | { kind: 'resume'; session: StudySession }
+  | { kind: 'resume'; session: FlashcardSession }
   | { kind: 'study' }
   | { kind: 'result' }
 
@@ -123,7 +128,7 @@ export function StudyScreen() {
       const loadedAssets = await listAssets(setId)
       const settings = await getAppSettings()
       const progressMap = await loadProgressMap(setId)
-      const session = await getSession(setId)
+      const session = await getSession(setId, 'flashcard')
       if (cancelled) return
 
       if (loadedSet === undefined) {
@@ -141,7 +146,7 @@ export function StudyScreen() {
       const existingIds = new Set(loadedCards.map((card) => card.id))
       if (
         session !== undefined &&
-        isSessionUsable(session, existingIds, 'flashcard', loadedOptions)
+        isFlashcardSessionUsable(session, existingIds, loadedOptions)
       ) {
         setPhase({ kind: 'resume', session })
         return
@@ -242,7 +247,7 @@ export function StudyScreen() {
       const nextIndex = index + 1
       setIndex(nextIndex)
       if (nextIndex >= queue.length) {
-        await deleteSession(setId)
+        await deleteSession(setId, 'flashcard')
         setPhase({ kind: 'result' })
       } else {
         persistSession(options, queue, nextIndex, round)
@@ -303,7 +308,7 @@ export function StudyScreen() {
 
       if (nextQueue.length <= index) {
         // 条件を絞った結果, 残りが無くなった場合はその場でラウンドを終える
-        void deleteSession(setId)
+        void deleteSession(setId, 'flashcard')
         setPhase({ kind: 'result' })
         return
       }
@@ -311,7 +316,7 @@ export function StudyScreen() {
         persistSession(nextOptions, nextQueue, index, round)
       } else {
         // 進捗を保存しない設定に変えたら, 古い中断状態を残さない
-        void deleteSession(setId)
+        void deleteSession(setId, 'flashcard')
       }
     },
     [setId, queue, index, cards, progress, round, persistSession],

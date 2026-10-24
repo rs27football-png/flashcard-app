@@ -10,6 +10,11 @@ export interface QuizChoice {
   correct: boolean
   /** その文言を持つカードに添えられていた画像 (specs.md §4.4.2). 画像が無効なセットでは表示しない */
   imageId: string | null
+  /**
+   * その文言を持つカードの反対側 (specs.md §4.7.3).
+   * 判定後に選択肢を裏返して, 誤答が何の語の説明だったのかを確かめるために使う.
+   */
+  flipText: string
 }
 
 export interface QuizQuestion {
@@ -59,23 +64,33 @@ function collectAnswerTexts(setCards: readonly Card[], answerSide: Side): string
   return [...texts]
 }
 
+/** 答えの文言から, その文言を持つカードの付随情報を引くための控え */
+interface AnswerSource {
+  /** その面に添えられていた画像 (specs.md §4.4.2) */
+  imageId: string | null
+  /** 反対側の文言 (specs.md §4.7.3) */
+  flipText: string
+}
+
 /**
- * 答えの文言から画像を引けるようにする (specs.md §4.4.2).
- * 誤答は文言だけを集めて作るため, 選択肢に画像を添えるにはこの対応表が要る.
- * 同じ文言のカードが複数あるときは最初の1枚を採る.
+ * 答えの文言から, 由来するカードの情報を引けるようにする.
+ *
+ * 誤答は文言だけを集めて作るため, 選択肢に画像を添えたり裏返したりするには
+ * この対応表が要る. 同じ文言のカードが複数あるときは最初の1枚を採る.
  */
-function collectAnswerImages(
+function collectAnswerSources(
   setCards: readonly Card[],
   answerSide: Side,
-): Map<string, string> {
+): Map<string, AnswerSource> {
   const key = imageKeyOf(answerSide)
-  const images = new Map<string, string>()
+  const otherSide = oppositeOf(answerSide)
+  const sources = new Map<string, AnswerSource>()
   for (const card of setCards) {
     const text = card[answerSide]
-    const imageId = card[key]
-    if (text !== '' && imageId !== null && !images.has(text)) images.set(text, imageId)
+    if (text === '' || sources.has(text)) continue
+    sources.set(text, { imageId: card[key], flipText: card[otherSide] })
   }
-  return images
+  return sources
 }
 
 /**
@@ -111,7 +126,7 @@ export function buildQuestion(
   card: Card,
   answerTexts: readonly string[],
   front: Side,
-  answerImages: ReadonlyMap<string, string> = new Map(),
+  answerSources: ReadonlyMap<string, AnswerSource> = new Map(),
 ): QuizQuestion | null {
   const prompt = card[front]
   const answer = card[oppositeOf(front)]
@@ -123,11 +138,18 @@ export function buildQuestion(
 
   // 選択肢は毎回混ぜ, 正答の位置に偏りを出さない
   const choices = shuffle([
-    { text: answer, correct: true, imageId: card[imageKeyOf(oppositeOf(front))] },
+    {
+      text: answer,
+      correct: true,
+      imageId: card[imageKeyOf(oppositeOf(front))],
+      // 正答の反対側は問題文として既に出ているため, 裏返す用途では使わない
+      flipText: prompt,
+    },
     ...distractors.map((text) => ({
       text,
       correct: false,
-      imageId: answerImages.get(text) ?? null,
+      imageId: answerSources.get(text)?.imageId ?? null,
+      flipText: answerSources.get(text)?.flipText ?? '',
     })),
   ])
   return {
@@ -141,7 +163,7 @@ export function buildQuestion(
 
 function makeQuestions(targets: readonly Card[], setCards: readonly Card[], front: Side) {
   const answerTexts = collectAnswerTexts(setCards, oppositeOf(front))
-  const answerImages = collectAnswerImages(setCards, oppositeOf(front))
+  const answerSources = collectAnswerSources(setCards, oppositeOf(front))
   const questions: QuizQuestion[] = []
   let skippedEmpty = 0
   let skippedNoDistractor = 0
@@ -150,7 +172,7 @@ function makeQuestions(targets: readonly Card[], setCards: readonly Card[], fron
       skippedEmpty += 1
       continue
     }
-    const question = buildQuestion(card, answerTexts, front, answerImages)
+    const question = buildQuestion(card, answerTexts, front, answerSources)
     if (question === null) skippedNoDistractor += 1
     else questions.push(question)
   }
@@ -188,6 +210,20 @@ export function buildQuiz(
   const ordered = options.shuffle ? shuffle(pool) : pool.sort(byOrder)
   const made = makeQuestions(ordered, setCards, options.front)
   return { ...made, emptyReason: made.questions.length === 0 ? 'no-questions' : null }
+}
+
+/**
+ * 渡された順のまま問題を組み直す. 中断からの再開に用いる (specs.md §4.7.4).
+ *
+ * 選択肢は保存していないため, 誤答は再開時に選び直される. まだ解いていない問題に
+ * ついては差し支えなく, 解き終えた問題は結果だけを別に保持している.
+ */
+export function rebuildQuestions(
+  ordered: readonly Card[],
+  setCards: readonly Card[],
+  front: Side,
+): QuizQuestion[] {
+  return makeQuestions(ordered, setCards, front).questions
 }
 
 /** 指定したカードだけで問題を作り直す. 「間違えた問題だけ再挑戦」に用いる (specs.md §4.7.4) */
