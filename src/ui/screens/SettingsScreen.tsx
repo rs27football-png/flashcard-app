@@ -2,6 +2,8 @@ import { useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import type { AppSettings } from '../../core/types'
 import { getStorageUsage, type StorageUsage } from '../../core/db/assets'
+import { isStoragePersisted } from '../../core/db/storage'
+import { isStorageTight } from '../../core/backup/reminder'
 import { DEFAULT_APP_SETTINGS, getAppSettings, markBackedUp, updateAppSettings } from '../../core/db/settings'
 import { exportBackup } from '../../core/backup/exportBackup'
 import { importBackup, readBackupFile, summarize, type ImportMode } from '../../core/backup/importBackup'
@@ -47,6 +49,8 @@ export function SettingsScreen() {
   const goBack = useGoBack()
   const settings = useLiveQuery(() => getAppSettings(), [], DEFAULT_APP_SETTINGS)
   const usage = useLiveQuery(() => getStorageUsage(), [], EMPTY_USAGE)
+  // 永続化の状態は DB の変化と無関係だが, 開いたときに一度読めば足りる
+  const persisted = useLiveQuery(() => isStoragePersisted(), [], null)
 
   const [includeImages, setIncludeImages] = useState(true)
   const [busy, setBusy] = useState<'export' | 'import' | null>(null)
@@ -273,7 +277,23 @@ export function SettingsScreen() {
               {usage.quota !== null && ` / 割当 ${formatBytes(usage.quota)}`}
             </li>
           )}
+          {/* 永続化されていれば, 空き容量の逼迫で勝手に消されることがない (specs.md §6.2 P2) */}
+          {persisted !== null && (
+            <li className="usage__item">
+              <Icon name={persisted ? 'check' : 'lightbulb'} size={16} />
+              {persisted
+                ? '保存領域は保護されています'
+                : '保存領域は保護されていません。ホーム画面に追加すると認められやすくなります'}
+            </li>
+          )}
         </ul>
+
+        {/* 割当に近づくと書き込みが失敗しはじめる. 手遅れになる前に知らせる (specs.md §6.2 P4) */}
+        {isStorageTight(usage.usage, usage.quota) && (
+          <p className="alert">
+            残りの保存領域が少なくなっています。画像の多いセットを整理するか、先にバックアップを書き出してください。
+          </p>
+        )}
         {usage.perSet.length > 0 && (
           <>
             <h3 className="section__subtitle">セットごとの画像</h3>

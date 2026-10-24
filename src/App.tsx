@@ -1,6 +1,8 @@
+import { useEffect } from 'react'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { DEFAULT_APP_SETTINGS, getAppSettings } from './core/db/settings'
+import { requestPersistentStorage } from './core/db/storage'
 import { HomeScreen } from './ui/screens/HomeScreen'
 import { SetDetailScreen } from './ui/screens/SetDetailScreen'
 import { CardEditScreen } from './ui/screens/CardEditScreen'
@@ -21,6 +23,12 @@ export default function App() {
   // テーマは全画面に及ぶため, 画面ごとではなくここで一度だけ当てる (specs.md §4.12)
   const settings = useLiveQuery(() => getAppSettings(), [], DEFAULT_APP_SETTINGS)
   useTheme(settings.theme)
+
+  // 空き容量が逼迫したときに保存領域を断りなく破棄されないようにする (specs.md §6.2 P2).
+  // 認めるかどうかは端末の判断であり, 拒まれても通常の動作には影響しない
+  useEffect(() => {
+    void requestPersistentStorage()
+  }, [])
 
   return (
     <HashRouter>
