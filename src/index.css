@@ -2409,3 +2409,70 @@ label.btn {
   flex: 0 0 auto;
   gap: 0.375rem;
 }
+
+
+/* ==== データを失わないための知らせ (specs.md §6.2) ==== */
+
+.notices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+/* 幅375pxでは本文の横にボタンを置くと文章が回り込む. 行を分けて下に送る */
+.notice-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0 0.625rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--surface);
+}
+
+.notice-card > .icon {
+  grid-column: 1;
+  grid-row: 1;
+  /* 1行目の文字の高さに目を合わせる */
+  margin-top: 0.15rem;
+}
+
+/* 色で緊急度を分ける. 文面を読まずに重さが伝わるようにする */
+.notice-card--warn {
+  border-color: color-mix(in srgb, var(--learning) 55%, var(--border));
+  background-color: color-mix(in srgb, var(--learning) 12%, var(--surface));
+}
+
+.notice-card--danger {
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--border));
+  background-color: color-mix(in srgb, var(--danger) 12%, var(--surface));
+}
+
+.notice-card__body {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.notice-card__text {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.notice-card__sub {
+  margin: 0.25rem 0 0;
+  color: var(--fg-muted);
+  font-size: 0.8125rem;
+}
+
+.notice-card__actions {
+  display: flex;
+  grid-column: 2;
+  grid-row: 2;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  justify-content: flex-end;
+  margin-top: 0.625rem;
+}

@@ -16,6 +16,7 @@ import {
 import { countCardsPerSet, createSet, listAllSets, moveSet } from '../../core/db/sets'
 import { copyFolder } from '../../core/db/setOps'
 import { FolderSelect } from '../components/FolderSelect'
+import { HomeNotices } from '../components/HomeNotices'
 import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
 import { SetActions } from '../components/SetActions'
@@ -138,6 +139,9 @@ export function HomeScreen() {
           </button>
         </div>
       </header>
+
+      {/* データを失わないための案内 (specs.md §6.2) */}
+      <HomeNotices />
 
       {/* 検索への入口 (specs.md §3 S1, §4.10) */}
       <Link to="/search" className="search-entry">

@@ -31,11 +31,18 @@ export function isImageFile(file: File | null | undefined): file is File {
   return file !== null && file !== undefined && file.type.startsWith('image/')
 }
 
-/** バイト数を人が読める形にする. 圧縮の前後を並べて示すために使う */
+/**
+ * バイト数を人が読める形にする. 圧縮の前後や, 設定画面の使用容量に使う.
+ * 端末の割当は数 GB になるため, MB までで止めず GB まで繰り上げる.
+ */
 export function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  const KB = 1024
+  const MB = KB * 1024
+  const GB = MB * 1024
+  if (bytes < KB) return `${bytes} B`
+  if (bytes < MB) return `${Math.round(bytes / KB)} KB`
+  if (bytes < GB) return `${(bytes / MB).toFixed(1)} MB`
+  return `${(bytes / GB).toFixed(1)} GB`
 }
 
 interface Decoded {

@@ -189,3 +189,24 @@ export async function updateRichContent(
 ): Promise<void> {
   await db.sets.update(setId, { ...values, updatedAt: Date.now() })
 }
+
+/**
+ * バックアップの催促に使う日時 (specs.md §6.2 P3)。
+ *
+ * カードの追加・更新・削除は属する学習セットの `updatedAt` も更新するため、
+ * セットの表だけを見れば足りる。1万枚のカードを走査せずに判定できる。
+ */
+export async function getContentTimestamps(): Promise<{
+  latestUpdatedAt: number | null
+  firstCreatedAt: number | null
+}> {
+  const sets = await db.sets.toArray()
+  if (sets.length === 0) return { latestUpdatedAt: null, firstCreatedAt: null }
+  let latestUpdatedAt = 0
+  let firstCreatedAt = Number.POSITIVE_INFINITY
+  for (const set of sets) {
+    latestUpdatedAt = Math.max(latestUpdatedAt, set.updatedAt)
+    firstCreatedAt = Math.min(firstCreatedAt, set.createdAt)
+  }
+  return { latestUpdatedAt, firstCreatedAt }
+}
